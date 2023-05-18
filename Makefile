@@ -3,7 +3,8 @@ NAME = webserv
 CXX = c++
 COLOR = \0033[1;35m
 
-CXXFLAGS = -Wall -Werror -Wextra -std=c++98  -O3 -fsanitize=address
+# CXXFLAGS = -Wall -Werror -Wextra -std=c++98  -O3 -fsanitize=address
+CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 #CXXFLAGS = -g -fPIE -std=c++98  -O3  --no-warnings
 
 # DEBUG_PATH = debug/
@@ -12,7 +13,7 @@ CXXFLAGS = -Wall -Werror -Wextra -std=c++98  -O3 -fsanitize=address
 
 SRCS_PATH = srcs/
 
-SRCS_FILE = main.cpp utils.cpp
+SRCS_FILE = main.cpp AFileDescriptor.cpp SocketFd.cpp
 
 # SRCS_FILE += $(addprefix $(DEBUG_PATH), $(DEBUG_FILE))
 
@@ -20,9 +21,9 @@ SRCS = $(addprefix $(SRCS_PATH), $(SRCS_FILE))
 
 OBJS = $(SRCS:.cpp=.o)
 
-HEADER_FILE = 
-
 HEADER_PATH = includes/
+
+HEADER_FILE = AFileDescriptor.hpp SocketFd.hpp 
 
 HEADER = $(addprefix $(HEADER_PATH), $(HEADER_FILE))
 
