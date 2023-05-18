@@ -33,3 +33,4 @@
 
 # Vim plugin
 compile_commands.json
+.clangd
