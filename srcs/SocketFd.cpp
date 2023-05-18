@@ -6,15 +6,17 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/18 18:15:45 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/05/18 23:06:55 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "SocketFd.hpp"
 #include "AFileDescriptor.hpp"
 
+#include <cstddef>
 #include <iostream>
 #include <unistd.h> // read
+#include <cstdio> // perror
 
 SocketFd::SocketFd(void) : AFileDescriptor()
 {}
@@ -47,20 +49,36 @@ SocketFd::SocketFd(int fd)
 
 int		SocketFd::doOnRead()
 {
-	std::cout << "doOnRead()" << std::endl;
-	
 	char	buffer[BUFFER_SIZE];
 	size_t	bytes;
+	size_t	posHeadersEnd;
 
-	bytes = read(this->_fd, buffer, BUFFER_SIZE - 1);
-	if (bytes <= 0)
+	if ((bytes = read(this->_fd, buffer, BUFFER_SIZE - 1)) <= 0)
+	{
+		if (bytes == (size_t) -1)
+			perror("read");
 		close(this->_fd);
+	}
 	buffer[bytes] = '\0';
 
 	this->_rawData.append(buffer);
-	// Check if headers in request is empty or not
+	posHeadersEnd = this->_rawData.find("\r\n\r\n");
+	// Try to fill hearders if empty
+	if (this->_request.getHeaders().empty())
+	{
+		if (posHeadersEnd == std::string::npos)
+			return (Request::requestUncomplete);
+		this->_request.fillHeaders(this->_rawData);
+		std::cout << this->_rawData;
+	}
 
-	return (0);
+	if (!this->_request.hasMessageBody())
+		return (Request::requestComplete);
+	this->_request.fillMessageBody(this->_rawData);
+	if (this->_request.isMessageBodyTerminated())
+		return (Request::requestComplete);
+
+	return (Request::requestUncomplete);
 }
 
 int		SocketFd::doOnWrite()

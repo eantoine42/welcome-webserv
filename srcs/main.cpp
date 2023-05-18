@@ -6,10 +6,11 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 15:44:08 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/18 17:56:43 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/05/18 23:00:45 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "Request.hpp"
 #include "SocketFd.hpp"
 
 #include <iostream>
@@ -22,7 +23,6 @@
 
 #define PORT_LISTEN 18000
 #define N_QUEUED	10
-#define	BUFFER_SIZE	1080
 
 int		couldFailedAndExit(int retFunction, const char *functionName)
 {
@@ -51,10 +51,9 @@ int main()
 
 	socketFd = couldFailedAndExit(accept(serverFd, NULL, NULL), "accept");
 	
-	char buffer[BUFFER_SIZE];
-	int n = read(socketFd, buffer, BUFFER_SIZE);
-	buffer[n] = '\0';
-	std::cout << buffer;
+	SocketFd socket(socketFd);
+	
+	while (socket.doOnRead() != Request::requestComplete);
 
 	close(socketFd);
 	close(serverFd);
