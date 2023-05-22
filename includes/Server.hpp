@@ -1,44 +1,38 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   SocketFd.hpp                                       :+:      :+:    :+:   */
+/*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/05/18 16:02:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/22 21:10:22 by lfrederi         ###   ########.fr       */
+/*   Created: 2023/05/22 13:14:41 by lfrederi          #+#    #+#             */
+/*   Updated: 2023/05/22 18:50:42 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SOCKET_FD
-#define SOCKET_FD
+#ifndef SERVER
+#define SERVER
 
 #include "AFileDescriptor.hpp"
-#include "Request.hpp"
+#include <map>
 
-#define BUFFER_SIZE 10
-
-class SocketFd : public AFileDescriptor
+class Server
 {
 	private:
-	
-		Request	_request;
+		int	_fd;
 
 	public:
 
-		SocketFd(void);
-		SocketFd(SocketFd const & copy);
-		SocketFd & operator=(SocketFd const & rhs);
-		virtual ~SocketFd();
+		Server(void);
+		Server(Server const & copy);
+		Server & operator=(Server const & rhs);
+		virtual ~Server();
 
 		// Constructors
-		SocketFd(int fd);
-
-		// Geters
-		Request const & getRequest() const;
-
-		virtual		int	doOnRead();
-		virtual		int	doOnWrite();
+		Server(int fd);
+		
+		// Members methods
+		void	clientConnect(std::map<int, AFileDescriptor *> & map);
 
 };
 

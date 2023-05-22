@@ -11,11 +11,13 @@ CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 
 # DEBUG_FILE = Debugger.cpp
 
+FILE_DESCRIPTOR_SRCS = $(addprefix fileDescriptor/, AFileDescriptor.cpp SocketFd.cpp)
+
 SRCS_PATH = srcs/
 
-SRCS_FILE = main.cpp AFileDescriptor.cpp SocketFd.cpp Request.cpp
+SRCS_FILE = main.cpp Server.cpp Request.cpp Debugger.cpp
 
-# SRCS_FILE += $(addprefix $(DEBUG_PATH), $(DEBUG_FILE))
+SRCS_FILE += $(FILE_DESCRIPTOR_SRCS)
 
 SRCS = $(addprefix $(SRCS_PATH), $(SRCS_FILE))
 
@@ -23,7 +25,7 @@ OBJS = $(SRCS:.cpp=.o)
 
 HEADER_PATH = includes/
 
-HEADER_FILE = AFileDescriptor.hpp SocketFd.hpp Request.hpp 
+HEADER_FILE = Request.hpp Debugger.hpp AFileDescriptor.hpp Server.hpp SocketFd.hpp
 
 HEADER = $(addprefix $(HEADER_PATH), $(HEADER_FILE))
 
