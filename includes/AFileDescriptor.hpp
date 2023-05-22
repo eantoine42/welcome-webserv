@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 14:06:22 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/18 16:51:58 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/05/19 13:21:22 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,12 +27,12 @@ class AFileDescriptor
 		AFileDescriptor();
 		AFileDescriptor(AFileDescriptor const & copy);
 		AFileDescriptor & operator=(AFileDescriptor const & rhs);
-		virtual ~AFileDescriptor();
 
 		// Constructors
 		AFileDescriptor(int fd);
 
 	public:
+		virtual ~AFileDescriptor();
 
 		// Geters
 		int					getFd() const;

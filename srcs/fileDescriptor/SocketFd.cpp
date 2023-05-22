@@ -6,17 +6,19 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/18 23:06:55 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/05/22 21:05:56 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "SocketFd.hpp"
-#include "AFileDescriptor.hpp"
+#include "Debugger.hpp"
 
 #include <cstddef>
 #include <iostream>
 #include <unistd.h> // read
 #include <cstdio> // perror
+#include <fstream>
+#include <sys/socket.h> // recv
 
 SocketFd::SocketFd(void) : AFileDescriptor()
 {}
@@ -40,40 +42,58 @@ SocketFd & SocketFd::operator=(SocketFd const & rhs)
 
 SocketFd::~SocketFd()
 {
-	std::cout << "Destructor SocketFd" << std::endl;
+	std::cout << "SocketFd destructor()" << std::endl;
 }
 
 SocketFd::SocketFd(int fd)
 	:	AFileDescriptor(fd)
 {}
 
+
+Request const &	SocketFd::getRequest() const
+{
+	return (this->_request);
+}
+
 int		SocketFd::doOnRead()
 {
 	char	buffer[BUFFER_SIZE];
-	size_t	bytes;
+	ssize_t	n;
 	size_t	posHeadersEnd;
 
-	if ((bytes = read(this->_fd, buffer, BUFFER_SIZE - 1)) <= 0)
-	{
-		if (bytes == (size_t) -1)
-			perror("read");
-		close(this->_fd);
-	}
-	buffer[bytes] = '\0';
+	std::cout << "FD on read " << this->_fd << std::endl;
 
-	this->_rawData.append(buffer);
-	posHeadersEnd = this->_rawData.find("\r\n\r\n");
+	while ((n = recv(this->_fd, buffer, BUFFER_SIZE - 1, 0)) > 0)
+	{
+		buffer[n] = '\0';
+		std::cout << "test" << std::endl;
+
+		this->_rawData.append(buffer);
+		// End request
+		if ((posHeadersEnd = this->_rawData.find("\r\n\r\n") != std::string::npos))
+			std::cout << "" ;
+	}
+	
+	std::cout << "end loop n = " << n << std::endl;
+
+	// Socket connection close, a EOF was present
+	if (n == 0)
+		return (1); 
+
 	// Try to fill hearders if empty
 	if (this->_request.getHeaders().empty())
 	{
 		if (posHeadersEnd == std::string::npos)
 			return (Request::requestUncomplete);
 		this->_request.fillHeaders(this->_rawData);
-		std::cout << this->_rawData;
 	}
 
 	if (!this->_request.hasMessageBody())
+	{
+		this->_rawData.clear();
 		return (Request::requestComplete);
+	}
+
 	this->_request.fillMessageBody(this->_rawData);
 	if (this->_request.isMessageBodyTerminated())
 		return (Request::requestComplete);
@@ -83,6 +103,34 @@ int		SocketFd::doOnRead()
 
 int		SocketFd::doOnWrite()
 {
-	std::cout << "doOnWrite()" << std::endl;
+	std::ifstream file("sample.json");
+	if (!file.good())
+	{
+		std::cerr << "Error while opening file" << std::endl;
+		return (1);
+	}
+	std::string result;
+	const char * response = "HTTP/1.1 200 OK\r\nContent-type: application/json\r\nContent-length: ";
+
+	result.append(response);
+
+	file.seekg(0, file.end);
+	int size = file.tellg();
+	file.seekg(0, file.beg);
+
+	char * buffer = new char [size + 1];
+	file.read(buffer, size);
+	buffer[file.gcount()] = '\0';
+
+	char integer[20];
+	std::sprintf(integer, "%d", size);
+	result.append(integer);
+	result.append("\r\n\r\n");
+	result.append(buffer);
+
+	delete [] buffer;
+	file.close();
+	write(this->_fd, result.c_str(), result.length());
+
 	return (0);
 }
