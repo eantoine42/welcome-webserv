@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/22 21:05:56 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/05/23 09:07:50 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,19 +66,14 @@ int		SocketFd::doOnRead()
 	while ((n = recv(this->_fd, buffer, BUFFER_SIZE - 1, 0)) > 0)
 	{
 		buffer[n] = '\0';
-		std::cout << "test" << std::endl;
-
 		this->_rawData.append(buffer);
-		// End request
-		if ((posHeadersEnd = this->_rawData.find("\r\n\r\n") != std::string::npos))
-			std::cout << "" ;
 	}
 	
-	std::cout << "end loop n = " << n << std::endl;
-
 	// Socket connection close, a EOF was present
 	if (n == 0)
 		return (1); 
+
+	posHeadersEnd = this->_rawData.find("\r\n\r\n");
 
 	// Try to fill hearders if empty
 	if (this->_request.getHeaders().empty())
@@ -103,6 +98,9 @@ int		SocketFd::doOnRead()
 
 int		SocketFd::doOnWrite()
 {
+	
+	std::cout << "write" << std::endl;
+
 	std::ifstream file("sample.json");
 	if (!file.good())
 	{
