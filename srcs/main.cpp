@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 15:44:08 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/22 20:38:24 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/05/26 19:04:06 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,6 +104,8 @@ int main()
 						break;
 					case EPOLLOUT:
 						mapFileDescriptor[fd]->doOnWrite();
+						// Don't close if if header alive is present
+						mapFileDescriptor.erase(fd);
 						close(fd);
 						break;
 					default:

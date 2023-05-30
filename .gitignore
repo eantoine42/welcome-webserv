@@ -34,3 +34,6 @@
 # Vim plugin
 compile_commands.json
 .clangd
+
+# Vscode
+.vscode/
