@@ -4,7 +4,7 @@ CXX = c++
 COLOR = \0033[1;35m
 
 # CXXFLAGS = -Wall -Werror -Wextra -std=c++98  -O3 -fsanitize=address
-CXXFLAGS = -Wall -Werror -Wextra -std=c++98
+CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -g
 #CXXFLAGS = -g -fPIE -std=c++98  -O3  --no-warnings
 
 # DEBUG_PATH = debug/
@@ -13,11 +13,14 @@ CXXFLAGS = -Wall -Werror -Wextra -std=c++98
 
 FILE_DESCRIPTOR_SRCS = $(addprefix fileDescriptor/, AFileDescriptor.cpp SocketFd.cpp)
 
+CONF_SRCS = $(addprefix conf/, ServerConf.cpp Location.cpp Syntax.cpp)
+
 SRCS_PATH = srcs/
 
-SRCS_FILE = main.cpp Server.cpp Request.cpp Debugger.cpp
+SRCS_FILE = main1.cpp Server.cpp Request.cpp Debugger.cpp utils.cpp
 
 SRCS_FILE += $(FILE_DESCRIPTOR_SRCS)
+SRCS_FILE += $(CONF_SRCS)
 
 SRCS = $(addprefix $(SRCS_PATH), $(SRCS_FILE))
 
@@ -25,7 +28,9 @@ OBJS = $(SRCS:.cpp=.o)
 
 HEADER_PATH = includes/
 
-HEADER_FILE = Request.hpp Debugger.hpp AFileDescriptor.hpp Server.hpp SocketFd.hpp
+HEADER_FILE = Request.hpp Debugger.hpp AFileDescriptor.hpp \
+              Server.hpp SocketFd.hpp ServerConf.hpp Location.hpp \
+			  Exception.hpp Syntax.hpp utils.hpp
 
 HEADER = $(addprefix $(HEADER_PATH), $(HEADER_FILE))
 

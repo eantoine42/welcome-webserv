@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/23 09:07:50 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/05/26 19:03:32 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,11 +63,14 @@ int		SocketFd::doOnRead()
 
 	std::cout << "FD on read " << this->_fd << std::endl;
 
-	while ((n = recv(this->_fd, buffer, BUFFER_SIZE - 1, 0)) > 0)
+	if ((n = recv(this->_fd, buffer, BUFFER_SIZE - 1, 0)) > 0)
 	{
 		buffer[n] = '\0';
 		this->_rawData.append(buffer);
 	}
+	
+	if (n < 0)
+		DEBUG_COUT("erorr");
 	
 	// Socket connection close, a EOF was present
 	if (n == 0)

@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVER
-#define SERVER
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
 #include "AFileDescriptor.hpp"
 #include <map>
