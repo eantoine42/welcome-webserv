@@ -177,7 +177,7 @@ void			Syntax::testPath(const std::string &path)
 	if (path.empty())
 		throw (EmptyConfPath());
 	ext_pos = path.find(".conf");
-	if (ext_pos == std::string::npos|| ext_pos != path.size() - 5)
+	if (ext_pos == std::string::npos || ext_pos != path.size() - 5)
 		throw (BadExtensionConfFile());
 	if (!fileExists(path.c_str()))
 		throw (FileDoesNotExist());
