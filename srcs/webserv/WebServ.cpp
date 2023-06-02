@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/02 12:08:20 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/02 16:55:54 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,19 @@ WebServ &   WebServ::operator=(WebServ const & rhs)
 }
 
 WebServ::~WebServ()
-{}
+{
+	std::map<int, AFileDescriptor *>::iterator it;
+	for (it = this->_mapFileDescriptors.begin(); it != this->_mapFileDescriptors.end(); it++)
+	{
+		delete it->second;
+		close(it->first);
+	}
+
+	std::map<int, Server>::iterator it1;
+	for (it1 = this->_mapServers.begin(); it1 != this->_mapServers.end(); it1++)
+		close(it1->first);
+	close(this->_epollFd);
+}
 
 void    WebServ::addServer(std::pair<int, Server> server)
 {
@@ -104,7 +116,7 @@ void    WebServ::start()
                         delete this->_mapFileDescriptors[fd];
 						this->_mapFileDescriptors.erase(fd);
 						close(fd);
-						j = 1;
+						//j = 1;
 						break;
 					default:
 						std::cout << "default => event = " << event;
