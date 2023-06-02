@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 15:40:16 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/18 16:57:51 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/02 17:04:50 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ AFileDescriptor::~AFileDescriptor()
 
 // Constructors
 AFileDescriptor::AFileDescriptor(int fd)
-	:	_fd(fd)
+	:	_fd(fd), _open(true)
 {}
 
 // Geters

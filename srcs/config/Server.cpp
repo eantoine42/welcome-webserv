@@ -35,6 +35,7 @@ Server::Server(Server const &src)
 		_IP(src._IP),
 		_error_pages(src._error_pages),
 		_index(src._index),
+		_autoindex(src._autoindex),
 		_client_body_size(src._client_body_size),
 		_cgi(src._cgi),
 		_location(src._location)
