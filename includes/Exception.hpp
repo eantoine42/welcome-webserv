@@ -178,4 +178,22 @@ class FatalError : public std::exception
 		}
 };
 
+class EpollInitError : public std::exception
+{
+	private:
+		std::string	_msg;
+
+	public:
+		EpollInitError(std::string msg)
+		:	_msg(msg) {}
+
+		~EpollInitError() throw() {};
+
+		char const	*what() const throw()
+		{
+			std::cerr << "Epoll init Error :" << std::endl;
+			return _msg.c_str();
+		}
+};
+
 #endif
