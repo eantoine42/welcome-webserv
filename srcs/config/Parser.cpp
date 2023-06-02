@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/31 22:44:52 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/02 09:19:13 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ Parser::~Parser()
 Parser::Parser(std::string configFile) : _configFile(configFile)
 {}
 
-void    Parser::parseConfFile(std::map<int, Server> & mapServers)
+void    Parser::parseConfFile(WebServ & webServ) const
 {
     std::vector<Server> server_list;
 	std::string conf_string;
@@ -58,7 +58,7 @@ void    Parser::parseConfFile(std::map<int, Server> & mapServers)
 	conf_string_formated.erase(conf_string_formated.size() - 1);
 	parseServers(server_list, conf_string_formated);
 
-    createServerSockets(server_list, mapServers);
+    createServerSockets(server_list, webServ);
 }
 
 /**
@@ -70,7 +70,7 @@ void    Parser::parseConfFile(std::map<int, Server> & mapServers)
  * @param std::string const &path 
  * @return std::string 
  */
-std::string     Parser::getStringConf()
+std::string     Parser::getStringConf() const
 {
 	std::string content;
 	std::string line;
@@ -106,7 +106,7 @@ std::string     Parser::getStringConf()
  * @param std::vector<server> server_info 
  * @param std::string str_config 
  */
-void    Parser::parseServers(std::vector<Server> &server_info, std::string str_config)
+void    Parser::parseServers(std::vector<Server> & server_info, std::string str_config) const
 {
 	size_t i = 0;
 	if (DEBUG_STATUS)
@@ -138,7 +138,7 @@ void    Parser::parseServers(std::vector<Server> &server_info, std::string str_c
 		std::cout<<server_info<<std::endl;
 }
 
-void    Parser::createServerSockets(std::vector<Server> const & servers, std::map<int, Server> & mapServers)
+void    Parser::createServerSockets(std::vector<Server> const & servers, WebServ & webServ) const
 {
 	std::vector<Server>::const_iterator it;
 
@@ -172,7 +172,7 @@ void    Parser::createServerSockets(std::vector<Server> const & servers, std::ma
         //if (fcntl(socketFd, F_SETFL, O_NONBLOCK) == -1) //makes the socket nonblock
         //    throw(SetServerException("Problem setting the socket"));
         if (listen(socketFd, MAX_CLIENT))
-            throw(SetServerException("Problem with listen"));
-        mapServers.insert(std::pair<int, Server>(socketFd, (*it)));    
+            throw(SetServerException("Problem with listen")); 
+		webServ.addServer(std::pair<int, Server>(socketFd, (*it)));  
     }
 }

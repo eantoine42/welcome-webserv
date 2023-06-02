@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/26 19:03:32 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/02 11:19:28 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,11 +20,11 @@
 #include <fstream>
 #include <sys/socket.h> // recv
 
-SocketFd::SocketFd(void) : AFileDescriptor()
+SocketFd::SocketFd(void) : AFileDescriptor(), _serverInfo(NULL)
 {}
 
 SocketFd::SocketFd(SocketFd const & copy)
-	:	AFileDescriptor(copy)
+	:	AFileDescriptor(copy), _serverInfo(copy._serverInfo)
 {}
 
 SocketFd & SocketFd::operator=(SocketFd const & rhs)
@@ -45,8 +45,8 @@ SocketFd::~SocketFd()
 	std::cout << "SocketFd destructor()" << std::endl;
 }
 
-SocketFd::SocketFd(int fd)
-	:	AFileDescriptor(fd)
+SocketFd::SocketFd(int fd, Server const * serverInfo)
+	:	AFileDescriptor(fd), _serverInfo(serverInfo)
 {}
 
 
