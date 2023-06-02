@@ -25,7 +25,7 @@ Server::Server(void)
 		_IP("0.0.0.0"),
 		_index("index index.html"),
 		_autoindex(false),
-		_client_body_size(1)
+		_client_body_size(1000000)
 {}
 
 Server::Server(Server const &src)
@@ -62,7 +62,7 @@ std::string							const &Server::getIndex() const{return (_index);	}
 bool								const &Server::getAutoindex() const{return (_autoindex);}
 std::string							const &Server::getIp() const{return (_IP);}
 std::string							const &Server::getError() const{return (_error_pages);}
-int									const &Server::getClientBodySize() const{return (_client_body_size);}
+long int							const &Server::getClientBodySize() const{return (_client_body_size);}
 std::vector<Location>				const &Server::getLocation() const{return (_location);}
 
 
@@ -303,7 +303,21 @@ void	Server::setClientBodySize(std::vector<std::string> token)
 {
 	if (token.size() > 2)
 		throw(ConfFileParseError("Only one client body size max"));
+	std::string str = token[1].erase(token[1].size() - 1);
+	size_t i=0;
+	while (i < str.length() && (std::isspace(str[i]) || std::isdigit(str[i])))
+		i++;
+	if (str.length()!=i && str[i]!='M' && str[i]!='m' && str[i]!='G' && str[i]!='g' && str[i]!='k' && str[i]!='K')
+		throw(ConfFileParseError("error client body size syntax"));
+	if (str.length()!=i && str.length() !=i+1)
+		throw(ConfFileParseError("error client body size syntax"));
 	_client_body_size = atoi(token[1].erase(token[1].size() - 1).c_str());
+	if (str[i] && (str[i]=='M' || str[i]=='m'))
+		_client_body_size *=1000000;
+	else if (str[i] && (str[i]=='G' || str[i]=='g'))
+		_client_body_size *=1000000000;
+	else if (str[i] && (str[i]=='k' || str[i]=='K'))
+		_client_body_size *=1000;
 }
 
 

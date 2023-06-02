@@ -257,7 +257,8 @@ std::vector<std::string> Syntax::splitString(std::string str, const std::string 
     while ((pos = str.find_first_of(charset)) != std::string::npos)
 	{
         token = str.substr(0, pos);
-        tokens.push_back(token);
+        if(token.compare(""))
+			tokens.push_back(token);
         str.erase(0, pos + 1);
     }
     tokens.push_back(str);
