@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/02 11:02:58 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/05 17:01:44 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,10 +24,12 @@ class WebServ
     private:
 
         int                                 _epollFd;
-        std::map<int, Server>               _mapServers;
-        std::map<int, AFileDescriptor *>    _mapFileDescriptors;
+        std::map<int, Server>               _mapServs;
+        std::map<int, AFileDescriptor *>    _mapFd;
 
         void    clientConnect(int serverFd);
+        void    doOnRead(int fd);
+        void    doOnWrite(int fd);
 
     public:
 

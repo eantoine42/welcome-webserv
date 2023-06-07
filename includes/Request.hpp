@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/18 23:02:17 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/07 23:01:20 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,12 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 #define REQUEST_COMPLETE	1
 #define REQUEST_UNCOMPLETE	2
+#define	CRLF		"\r\n"
+#define CRLFCRLF	"\r\n\r\n"
 
 class Request
 {
@@ -25,6 +28,8 @@ class Request
 		
 		std::string							_httpMethod;
 		std::string							_pathRequest;
+		std::string							_fileName;
+		std::string							_queryParam;
 		std::string							_httpVersion;
 		std::map<std::string, std::string>	_headers;
 		std::string							_messageBody;
@@ -58,9 +63,10 @@ class Request
 		void	setMessageBody(std::string const & messageBody);
 
 		// Members methods
-		void	fillHeaders(std::string const & data);
-		void	fillMessageBody(std::string const & data);
-		bool	isMessageBodyTerminated();
+		bool	handleRequestLine(std::string requestLine);
+		bool	handleHeaders(std::string headers);
+		int		handleMessageBody(std::vector<unsigned char> messageBody);
+		void	print(); // REMOVE
 
 };
 
