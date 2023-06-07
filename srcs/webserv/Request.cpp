@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/07 23:14:43 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/07 23:29:56 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,7 +141,7 @@ bool	Request::handleRequestLine(std::string requestLine)
 	if (_pathRequest.size() == 1)
 		_fileName = "index.html";
 	else if (query == std::string::npos)
-		_fileName = _pathRequest.substr(lastSlash);
+		_fileName = _pathRequest.substr(lastSlash + 1);
 	else
 	{
 		_fileName = _pathRequest.substr(lastSlash, query);
@@ -187,6 +187,7 @@ int		Request::handleMessageBody(std::vector<unsigned char> messageBody)
 void	Request::print()
 {
 	std::cout << _httpMethod << " " << _pathRequest << " " << _httpVersion << std::endl;
+	std::cout << "fileName:" << _fileName << " / query: " << _queryParam << std::endl;
 
 	std::map<std::string, std::string>::iterator it = _headers.begin();
 	for (; it != _headers.end(); it++)
