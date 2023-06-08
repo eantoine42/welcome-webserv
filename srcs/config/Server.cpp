@@ -29,6 +29,10 @@ Server::Server(void)
 	_index.push_back("index");
 	_index.push_back("index.html");
 }
+{
+	_index.push_back("index");
+	_index.push_back("index.html");
+}
 
 Server::Server(Server const &src)
 	:	_root(src._root),

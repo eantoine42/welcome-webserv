@@ -222,7 +222,7 @@ void	Location::setErrorPages(std::vector<std::string> token)
 void	Location::setClientBodySize(std::vector<std::string> token)
 {
 	if (token.size() > 2)
-		throw(ConfFileParseError("Location bloc [" + syntax::intToString(_loc_index) +"] : Only one client body size max"));
+		throw(ConfFileParseError("Location bloc [" + Syntax::intToString(_loc_index) +"] : Only one client body size max"));
 	std::string str = token[1].erase(token[1].size() - 1);
 	size_t i=0;
 	while (i < str.length() && (std::isspace(str[i]) || std::isdigit(str[i])))
