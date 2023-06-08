@@ -6,7 +6,7 @@
 
 #include <cstdlib> // atoi
 
-Location::Location(int port, int loc_index, std::map<std::string, std::string>	cgi, bool autoindex, std::string index, std::string root, int client_body_size)
+Location::Location(int port, int loc_index, std::map<std::string, std::string>	cgi, bool autoindex, std::vector<std::string> index, std::string root, int client_body_size)
 :	_port(port),
 	_loc_index(loc_index),
 	_root(root),
@@ -54,7 +54,7 @@ int									const &Location::getLocIndex() const{return (_loc_index);}
 int									const &Location::getPort() const{return (_port);}
 std::string							const &Location::getUri() const{return _uri;}
 bool								const &Location::getAutoindex() const{return _autoindex;}
-std::string							const &Location::getIndex() const{return _index;}
+std::vector<std::string>			const &Location::getIndex() const{return _index;}
 std::string							const &Location::getReturn() const{return _return;}
 std::vector<std::string>			const &Location::getAllowMethod() const{return _allow_method;}
 std::string							const &Location::getRoot() const{return _root;}
@@ -158,13 +158,19 @@ void	Location::setAutoindex(std::vector<std::string> token)
 }
 void	Location::setIndex(std::vector<std::string> token)
 {
-	_index = "";
+	_index.clear();
 	size_t i = 1;
 	if (token.size() < 2)
 		throw(ConfFileParseError("Location bloc [" + Syntax::intToString(_loc_index) +"] : problem with number of arguments for index"));
-	for (; i < token.size() - 1; i++)
-		_index += token[i] + " ";
-	_index += token[i].erase(token[i].size() - 1);
+	for (; i < token.size() ; i++)
+	{
+		if (token[i].compare(" "))
+		{
+			if (i == token.size() - 1)
+				token[i].erase(token[i].size() - 1);
+			_index.push_back(token[i]);
+		}
+	}
 }
 
 void	Location::setAllowMethod(std::vector<std::string> token)
@@ -215,7 +221,7 @@ void	Location::setErrorPages(std::vector<std::string> token)
 void	Location::setClientBodySize(std::vector<std::string> token)
 {
 	if (token.size() > 2)
-		throw(ConfFileParseError("Location bloc [" + syntax::intToString(_loc_index) +"] : Only one client body size max"));
+		throw(ConfFileParseError("Location bloc [" + Syntax::intToString(_loc_index) +"] : Only one client body size max"));
 	std::string str = token[1].erase(token[1].size() - 1);
 	size_t i=0;
 	while (i < str.length() && (std::isspace(str[i]) || std::isdigit(str[i])))

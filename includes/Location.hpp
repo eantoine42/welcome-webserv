@@ -25,7 +25,7 @@ class Location
 		int									_loc_index;
 		std::string							_root;
 		std::vector<std::string>			_allow_method;
-		std::string							_index;
+		std::vector<std::string>			_index;
 		std::map<std::string, std::string>	_cgi;
 		bool								_autoindex;
 		std::string							_upload_dir;
@@ -57,7 +57,7 @@ class Location
 		Location &operator=(const Location &copy);
 		~Location();
 
-		Location(int port, int loc_index, std::map<std::string, std::string>	cgi, bool autoindex, std::string index, std::string root, int client_body_size);
+		Location(int port, int loc_index, std::map<std::string, std::string>	cgi, bool autoindex, std::vector<std::string> index, std::string root, int client_body_size);
 
 		void	setLocation(const std::string &str,  int &count);
 		void	parseLocation(std::string &line);
@@ -69,7 +69,7 @@ class Location
 		int									const &getPort() const;
 		std::string							const &getUri() const;
 		bool								const &getAutoindex() const;
-		std::string							const &getIndex() const;
+		std::vector<std::string>			const &getIndex() const;
 		std::string							const &getReturn() const;
 		std::vector<std::string>			const &getAllowMethod() const;
 		std::string							const &getRoot() const;

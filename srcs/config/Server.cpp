@@ -23,10 +23,12 @@ Server::Server(void)
 		_port(8080),
 		_server_name(""),
 		_IP("0.0.0.0"),
-		_index("index index.html"),
 		_autoindex(false),
 		_client_body_size(1000000)
-{}
+{
+	_index.push_back("index");
+	_index.push_back("index.html");
+}
 
 Server::Server(Server const &src)
 	:	_root(src._root),
@@ -58,7 +60,7 @@ std::string							const &Server::getRoot() const{return (_root);}
 std::map<std::string, std::string>	const &Server::getCgi() const{return (_cgi);}
 int									const &Server::getPort() const{return (_port);}
 std::string							const &Server::getName() const{return (_server_name);}
-std::string							const &Server::getIndex() const{return (_index);	}
+std::vector<std::string>			const &Server::getIndex() const{return (_index);	}
 bool								const &Server::getAutoindex() const{return (_autoindex);}
 std::string							const &Server::getIp() const{return (_IP);}
 std::string							const &Server::getError() const{return (_error_pages);}
@@ -106,7 +108,6 @@ void	Server::setServer(const std::string &str)
 	int count = 0;
 	int pos_end = Syntax::findClosingBracket(str);
 	int location_ct = 0;
-	//DEBUG_COUT("\n****Server to parse without line Server {  \n\n" + str);
 	while (count < pos_end)
 	{
 		Server::parseServer(str, count);
@@ -274,13 +275,19 @@ void	Server::setError(std::vector<std::string> token)
 
 void	Server::setIndex(std::vector<std::string> token)
 {
-	_index = "";
+	_index.clear();
 	size_t i = 1;
 	if (token.size() < 2)
 		throw(ConfFileParseError("problem with number of arguments for index"));
-	for (; i < token.size() - 1; i++)
-		_index += token[i] + " ";
-	_index += token[i].erase(token[i].size() - 1);
+	for (; i < token.size() ; i++)
+	{
+		if (token[i].compare(" "))
+		{
+			if (i == token.size() - 1)
+				token[i].erase(token[i].size() - 1);
+			_index.push_back(token[i]);
+		}
+	}
 }
 
 void	Server::setAutoindex(std::vector<std::string> token)
@@ -373,7 +380,9 @@ std::ostream    &operator<<(std::ostream &o, Server const &i)
 	if (i.getRoot().empty() == false)
 		o << "    root			=	[" << i.getRoot() << "]" << std::endl;
 	if (i.getIndex().empty() == false)
+	{
 		o << "    indexPage			=	[" << i.getIndex() << "]" << std::endl;
+	}
 	o << "    autoindex			=	[" << i.getAutoindex() << "]" << std::endl;
 	if (i.getError().empty() == false)
 		o << "    errorPage			=	[" << i.getError() << "]" << std::endl;
@@ -397,4 +406,18 @@ std::ostream    &operator<<(std::ostream &o, std::vector<Server>  const &srv)
 	return (o);
 }
 
-//TODO ignore a Server if same ip:port or name
+std::ostream    &operator<<(std::ostream &o, std::vector<std::string>  const &str)
+{
+	for (size_t i = 0; i< str.size(); i++)
+	if (i< str.size() - 1)
+		o<<str[i]<< " ; ";
+	else 
+		o<<str[i];
+	return (o);
+}
+
+//TODO ignore a Server if same ip:port or name eou add server 
+//TODO mettre en vector 
+//TODO verifier si chunk notre reponse en fonction maxbodysize
+//TODO sur quel critere la reponse est chunkee
+//TODO ajouter tableau mime type dans csyntax
