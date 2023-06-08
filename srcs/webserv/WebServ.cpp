@@ -106,7 +106,6 @@ void    WebServ::start()
 							bzero(&ev, sizeof(ev));
 							ev.events = EPOLLOUT;
 							ev.data.fd = fd;
-                            // TODO: How handle if epoll_ctl failed
 							epoll_ctl(this->_epollFd, EPOLL_CTL_MOD, fd, &ev);
 						}
 						break;

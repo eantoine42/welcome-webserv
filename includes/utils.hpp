@@ -11,7 +11,7 @@ inline std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
         if (it == v.begin())
             os << *it;
         else
-            os << ", " << *it;
+            os << "; " << *it;
     }
     return os;
 }

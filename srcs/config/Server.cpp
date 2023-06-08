@@ -419,4 +419,3 @@ std::ostream    &operator<<(std::ostream &o, std::vector<std::string>  const &st
 //TODO ignore a Server if same ip:port or name eou add server 
 //TODO verifier si chunk notre reponse en fonction maxbodysize
 //TODO sur quel critere la reponse est chunkee
-//TODO ajouter tableau mime type dans csyntax
