@@ -24,10 +24,11 @@ class WebServ
     private:
 
         int                                 _epollFd;
-        std::map<int, Server>               _mapServers;
+        std::map<int, std::vector<Server> > _mapServers;
         std::map<int, AFileDescriptor *>    _mapFileDescriptors;
 
         void    clientConnect(int serverFd);
+		
 
     public:
 
@@ -40,6 +41,9 @@ class WebServ
         void    addServer(std::pair<int, Server> server);
         void    epollInit();
         void    start();
+		int		avoidDoubleSocket(Server const & servers);
+		void	addServerInVector(int, Server const & servers);
+		void	print_serv();
         
 };
 

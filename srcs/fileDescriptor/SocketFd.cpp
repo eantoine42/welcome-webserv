@@ -45,7 +45,7 @@ SocketFd::~SocketFd()
 	std::cout << "SocketFd destructor()" << std::endl;
 }
 
-SocketFd::SocketFd(int fd, Server const * serverInfo)
+SocketFd::SocketFd(int fd, std::vector<Server> const * serverInfo)
 	:	AFileDescriptor(fd), _serverInfo(serverInfo)
 {}
 

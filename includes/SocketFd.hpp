@@ -23,7 +23,7 @@ class SocketFd : public AFileDescriptor
 {
 	private:
 	
-		Server const *	_serverInfo;
+		std::vector<Server> const *	_serverInfo;
 		Request			_request;
 
 		SocketFd(void);
@@ -35,7 +35,7 @@ class SocketFd : public AFileDescriptor
 		virtual ~SocketFd();
 
 		// Constructors
-		SocketFd(int fd, Server const * serverInfo);
+		SocketFd(int fd, std::vector<Server> const * serverInfo);
 
 		// Geters
 		Request const & getRequest() const;
