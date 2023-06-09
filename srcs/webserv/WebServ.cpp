@@ -50,6 +50,7 @@ WebServ::~WebServ()
 	}
 
 	std::map<int, std::vector<Server> >::iterator it1;
+	std::map<int, std::vector<Server> >::iterator it1;
 	for (it1 = this->_mapServers.begin(); it1 != this->_mapServers.end(); it1++)
 		close(it1->first);
 	close(this->_epollFd);
@@ -61,10 +62,15 @@ void    WebServ::addServer(std::pair<int, Server> server)
 	serv.first = server.first;
 	serv.second.push_back(server.second);
 	this->_mapServers.insert(serv);
+    std::pair<int, std::vector<Server> > serv;
+	serv.first = server.first;
+	serv.second.push_back(server.second);
+	this->_mapServers.insert(serv);
 }
 
 void    WebServ::epollInit()
 {
+    std::map<int, std::vector<Server> >::const_iterator   it;
     std::map<int, std::vector<Server> >::const_iterator   it;
     struct epoll_event                      event;
 
@@ -157,6 +163,50 @@ void    WebServ::clientConnect(int serverFd)
 		return ;
 	}
 	this->_mapFileDescriptors[socketConnect] = new SocketFd(socketConnect, &(this->_mapServers[serverFd]));
+}
+
+
+//check if the server has same IP/port matching in the Webserv map
+// returns -1 if creates new socket and returns >=0 if only need to add server to the vector within the map
+int WebServ::avoidDoubleSocket(Server const & server)
+{
+	if (this->_mapServers.empty())
+		return (-1);
+	std::map<int, std::vector<Server> >::iterator it;
+	int i = 0;
+	it = _mapServers.begin();
+	for (;it!=_mapServers.end();it++, i++)
+	{
+		if(server.getPort() == (*it).second[0].getPort() && server.getIp() == (*it).second[0].getIp())
+			return (i);
+	}
+	return (-1);
+}
+
+void	WebServ::addServerInVector(int i, Server const & servers)
+{
+	std::map<int, std::vector<Server> >::iterator it;
+	it = _mapServers.begin();
+	while (i > 0)
+	{
+		it++;
+		i--;
+	}
+	it->second.push_back(servers);
+}
+
+void 	WebServ::print_serv()
+{
+	std::map<int, std::vector<Server> >::iterator itm;
+	std::vector<Server>::iterator itv;
+	itm=_mapServers.begin();
+	for(;itm !=_mapServers.end(); itm++)
+	{
+		std::cout<<"nom IP : "<<(*itm).second[0].getIp()<<"  port: "<<(*itm).second[0].getPort()<<std::endl;
+		itv=(*itm).second.begin();
+		for(;itv !=(*itm).second.end(); itv++)
+			std::cout<<"nom de serveur : "<<(*itv).getName()<<std::endl;
+	}
 }
 
 
