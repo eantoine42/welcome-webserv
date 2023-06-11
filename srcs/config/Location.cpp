@@ -237,14 +237,8 @@ void	Location::setClientBodySize(std::vector<std::string> token)
 		_client_body_size *=1000000000;
 	else if (str[i] && (str[i]=='k' || str[i]=='K'))
 		_client_body_size *=1000;
-	if (str[i] && (str[i]=='M' || str[i]=='m'))
-		_client_body_size *=1000000;
-	else if (str[i] && (str[i]=='G' || str[i]=='g'))
-		_client_body_size *=1000000000;
-	else if (str[i] && (str[i]=='k' || str[i]=='K'))
-		_client_body_size *=1000;
-}
 
+}
 
 void	Location::setReturn(std::vector<std::string> token)
 	{
