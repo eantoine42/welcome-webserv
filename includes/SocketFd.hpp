@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/07 22:48:15 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/10 14:39:08 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 #define	READ_AGAIN		1
 #define	CLIENT_CLOSE	2
 #define ERROR			3
+#define	BY_CGI			4
 
 class SocketFd : public AFileDescriptor
 {
@@ -50,8 +51,8 @@ class SocketFd : public AFileDescriptor
 
 		// Public methods
 		int		readRequest();
-		void	prepareResponse(int ret, int epollFd);
-		void	sendResponse();
+		int		prepareResponse(int ret, int epollFd);
+		void	sendResponse(int epollFd);
 };
 
 #endif

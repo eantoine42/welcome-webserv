@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/07 23:22:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 16:55:09 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,12 @@
 #include "SocketFd.hpp"
 #include "Cgi.hpp"
 #include <sys/epoll.h> // epoll_create
-#include <cstring> // strerror
+#include <cstring> // strerror, bzero
 #include <errno.h> // errno
-#include <unistd.h> // bzero, close
+#include <unistd.h> // close
 #include <sys/socket.h> // accept
 #include <fcntl.h> // fcntl
+#include <stdio.h> // REMOVE
 
 /*****************
 * CANNONICAL FORM
@@ -113,17 +114,16 @@ void    WebServ::start()
 				clientConnect(fd);
 			else 
 			{
-				switch (event)
+				if (event & EPOLLIN)
+					doOnRead(fd);
+				if (event & EPOLLOUT)
+					doOnWrite(fd);
+				if (event & EPOLLHUP)
 				{
-					case EPOLLIN:
-						doOnRead(fd);
-						break;
-					case EPOLLOUT:
-						doOnWrite(fd);
-						break;
-					default:
-						// TODO: Handle event error
-						std::cout << "default => event = " << event;
+					// TODO: Handle event error
+					std::cout << "default => event = " << event;
+					_mapFd.erase(fd); // REMOVE TEST
+					close(fd); // REMOVE TEST
 				}
 			}
 
@@ -169,25 +169,62 @@ void	WebServ::doOnRead(int fd)
 {
 	AFileDescriptor * fileDescriptor = this->_mapFd[fd];
 	SocketFd * socketFd = NULL;
-	//Cgi * cgi = NULL;
+	Cgi * cgi = NULL;
 	int ret;
 	
-	if ((socketFd = reinterpret_cast<SocketFd *>(fileDescriptor)) != NULL)
+	if ((socketFd = dynamic_cast<SocketFd *>(fileDescriptor)) != NULL)
 	{
 		ret = socketFd->readRequest();
 		if (ret == CLIENT_CLOSE)
 			close(fd);
 		else if (ret == ERROR || ret == SUCCESS)
 		{
-			socketFd->prepareResponse(ret, _epollFd);
-			_mapFd.erase(fd); // REMOVE TEST
-			close(fd); // REMOVE TEST
+			if (socketFd->prepareResponse(ret, _epollFd) == BY_CGI)
+			{
+				Cgi * cgi = new Cgi(*socketFd);
+				int	ret;
+
+				if ((ret = cgi->run()) < 0)
+				{
+					delete cgi;
+					socketFd->prepareResponse(ret, _epollFd);
+
+				}
+				else
+				{
+					_mapFd[cgi->getReadFd()] = cgi;
+					struct epoll_event	event;
+					bzero(&event, sizeof(event));
+    				event.events = EPOLLIN;
+					event.data.fd = cgi->getReadFd();
+					if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi->getReadFd(), &event) < 0)
+					{
+						close(cgi->getReadFd());
+						std::cerr << "Epoll_ctl error" << std::endl;
+						perror("epoll_ctl");
+						return ;
+					}
+
+				}
+			}
+		
 		}
 	}
 	else
 	{
-		//cgi = reinterpret_cast<Cgi *>(fileDescriptor);
+		cgi = dynamic_cast<Cgi *>(fileDescriptor);
 		//cgi->getCgiResponse();
+		int n;
+		char buffer[BUFFER_SIZE];
+		if ((n = read(cgi->getReadFd(), buffer, BUFFER_SIZE)) > 0)
+		{
+			buffer[n] = '\0';
+			std::cout << buffer;
+		}
+		if (n == 0)
+			close(fd);
+			
+		
 	}
 
 }
@@ -201,7 +238,7 @@ void	WebServ::doOnWrite(int fd)
 	
 	if ((socketFd = reinterpret_cast<SocketFd *>(fileDescriptor)) != NULL)
 	{
-		socketFd->sendResponse();
+		socketFd->sendResponse(_epollFd);
 	}
 	else
 	{

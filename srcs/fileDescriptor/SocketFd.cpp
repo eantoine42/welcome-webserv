@@ -6,20 +6,23 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/07 22:57:27 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 16:56:17 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "SocketFd.hpp"
 #include "Debugger.hpp"
+#include "Response.hpp"
 
 #include <cstddef>
 #include <iostream>
+#include <cstring> // bzero
 #include <unistd.h> // read
 #include <cstdio> // perror
 #include <fstream>
 #include <sys/socket.h> // recv
 #include <algorithm> // search
+#include <sys/epoll.h>
 
 /*****************
 * CANNONICAL FORM
@@ -113,19 +116,46 @@ int		SocketFd::readRequest()
 }
 
 /// @brief 
-void	SocketFd::sendResponse()
+void	SocketFd::sendResponse(int epollFd)
 {
+	struct epoll_event ev;
+
 	send(_fd, &(_rawData[0]), _rawData.size(), 0);
+
+	bzero(&ev, sizeof(ev));
+	ev.events = EPOLLIN;
+	ev.data.fd = _fd;
+	epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd, &ev);
 }
 
 /// @brief 
-void	SocketFd::prepareResponse(int ret, int epollFd)
+int		SocketFd::prepareResponse(int ret, int epollFd)
 {
 	(void) ret;
-	(void) epollFd;
+	struct epoll_event ev;
 	
-	std::cout << "======= REQUEST ======" << std::endl;
-	_request.print();
+	if (ret == ERROR)
+	{
+		Response::badRequest(_rawData);
+		bzero(&ev, sizeof(ev));
+		ev.events = EPOLLOUT;
+		ev.data.fd = _fd;
+		epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd, &ev);
+	}
+	if (_request.getExtension().compare("php") == 0)
+	{
+		bzero(&ev, sizeof(ev));
+		ev.events = 0;
+		ev.data.fd = _fd;
+		epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd, &ev);
+		return BY_CGI;
+	}
+	Response::createResponse(_rawData);
+	bzero(&ev, sizeof(ev));
+	ev.events = EPOLLOUT;
+	ev.data.fd = _fd;
+	epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd, &ev);
+	return 0;
 }
 
 

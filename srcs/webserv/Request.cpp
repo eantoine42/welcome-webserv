@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/07 23:29:56 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/09 15:29:57 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,6 +64,21 @@ std::string const & Request::getHttpMethod() const
 std::string const & Request::getPathRequest() const
 {
 	return (this->_pathRequest);
+}
+
+std::string const &	Request::getFileName() const
+{
+	return (this->_fileName);
+}
+
+std::string const &	Request::getExtension() const
+{
+	return (this->_extension);
+}
+
+std::string const &	Request::getQueryParam() const
+{
+	return (this->_queryParam);
 }
 
 std::string const & Request::getHttpVersion() const
@@ -130,6 +145,7 @@ bool	Request::handleRequestLine(std::string requestLine)
 
 	size_t lastSlash = _pathRequest.rfind("/");
 	size_t query = _pathRequest.find("?");
+	size_t extension;
 	// TODO: Add DELETE POST
 	if (_httpMethod.compare("GET") != 0)
 		return false;
@@ -147,6 +163,8 @@ bool	Request::handleRequestLine(std::string requestLine)
 		_fileName = _pathRequest.substr(lastSlash, query);
 		_queryParam = _pathRequest.substr(query);
 	}
+	if ((extension = _fileName.rfind(".")) != std::string::npos)
+		_extension = _fileName.substr(extension + 1);
 	return true;	
 }
 
@@ -188,6 +206,7 @@ void	Request::print()
 {
 	std::cout << _httpMethod << " " << _pathRequest << " " << _httpVersion << std::endl;
 	std::cout << "fileName:" << _fileName << " / query: " << _queryParam << std::endl;
+	std::cout << "extension: " << _extension << std::endl;
 
 	std::map<std::string, std::string>::iterator it = _headers.begin();
 	for (; it != _headers.end(); it++)
