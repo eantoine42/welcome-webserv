@@ -4,6 +4,7 @@
 #include "WebServ.hpp"
 #include "Debugger.hpp"
 #include "Parser.hpp"
+#include "Syntax.hpp"
 
 extern volatile bool g_run;
 
@@ -15,7 +16,6 @@ static int  printUsage(char const *const prog_name) {
 int     main(int argc, const char **argv) 
 {
 	WebServ webServ;
-
 	argc = 1;
     if (argv[argc] && !std::strcmp(argv[argc], "-v"))
 	{

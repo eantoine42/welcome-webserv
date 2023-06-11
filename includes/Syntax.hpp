@@ -131,78 +131,6 @@ enum status_code_t {
 	HTTP_VERSION_NOT_SUPPORTED
 };
 
-enum mime_type_t {
-	AUDIO_AAC,
-	APPLICATION_X_ABIWORD,
-	APPLICATION_OCTET_STREAM_ARC,
-	VIDEO_X_MSVIDEO,
-	APPLICATION_VND_AMAZON_EBOOK,
-	APPLICATION_OCTET_STREAM,
-	IMAGE_BMP,
-	APPLICATION_X_BZIP,
-	APPLICATION_X_BZIP2,
-	APPLICATION_X_CSH,
-	TEXT_CSS,
-	TEXT_CSV,
-	TEXT_PLAIN,
-	APPLICATION_MSWORD,
-	APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_WORDPROCESSINGML_DOCUMENT,
-	APPLICATION_VND_MS_FONTOBJECT,
-	APPLICATION_EPUB_ZIP,
-	IMAGE_GIF,
-	TEXT_HTM,
-	TEXT_HTML,
-	IMAGE_X_ICON,
-	TEXT_CALENDAR,
-	APPLICATION_JAVA_ARCHIVE,
-	IMAGE_JPG,
-	IMAGE_JPEG,
-	APPLICATION_JAVASCRIPT,
-	APPLICATION_JSON,
-	AUDIO_MID,
-	AUDIO_MIDI,
-	VIDEO_MPEG,
-	APPLICATION_VND_APPLE_INSTALLER_XML,
-	APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION,
-	APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET,
-	APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT,
-	AUDIO_OGG,
-	VIDEO_OGG,
-	APPLICATION_OGG,
-	FONT_OTF,
-	IMAGE_PNG,
-	APPLICATION_PDF,
-	APPLICATION_VND_MS_POWERPOINT,
-	APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_PRESENTATIONML_PRESENTATION,
-	APPLICATION_X_RAR_COMPRESSED,
-	APPLICATION_RTF,
-	APPLICATION_X_SH,
-	IMAGE_SVG_XML,
-	APPLICATION_X_SHOCKWAVE_FLASH,
-	APPLICATION_X_TAR,
-	IMAGE_TIF,
-	IMAGE_TIFF,
-	APPLICATION_TYPESCRIPT,
-	FONT_TTF,
-	APPLICATION_VND_VISIO,
-	AUDIO_X_WAV,
-	AUDIO_WEBM,
-	VIDEO_WEBM,
-	IMAGE_WEBP,
-	FONT_WOFF,
-	FONT_WOFF2,
-	APPLICATION_XHTML_XML,
-	APPLICATION_VND_MS_EXCEL,
-	APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_SPREADSHEETML_SHEET,
-	APPLICATION_XML,
-	APPLICATION_VND_MOZILLA_XUL_XML,
-	APPLICATION_ZIP,
-	VIDEO_3GPP,
-	VIDEO_3GPP2,
-	APPLICATION_X_7Z_COMPRESSED,
-	TOTAL_MIME_TYPES
-};
-
 class Syntax {
 	public:
 		~Syntax();
@@ -233,11 +161,7 @@ class Syntax {
 			std::string		name;
 		};
 
-		struct mime_type_entry_t {
-			mime_type_t	mime_type_index;
-			std::string ext;
-			std::string	name;
-		};
+
 
 		static std::map<status_code_t, std::string> 		_response_status_map;
 		static const method_tab_entry_t						method_tab[];
@@ -245,7 +169,7 @@ class Syntax {
 		static const location_instruction_tab_entry_t 		location_instructions_tab[];
 		static const request_header_tab_entry_t				request_header_tab[];
 		static const answer_header_tab_entry_t				answer_header_tab[];
-		static const mime_type_entry_t 						mime_types_tab[];
+		static const std::map<std::string, std::string>		_mime_types_map;
 
 		static std::string				trimComments(const std::string &str);
 		static std::string				trimWhitespaces(const std::string& str);
@@ -265,6 +189,7 @@ class Syntax {
 		static int 						correctLocationInstruction(std::vector<std::string> token);
 		static int 						correctMethodInstruction(std::vector<std::string> token);
 		static void 					fill_response_status_map(std::map<status_code_t, std::string> &map);
+		static void 					fillMimeTypeMap(std::map<std::string, std::string> &mime_types_map);
 		static std::string				getFormattedDate(std::time_t time);
 
 
