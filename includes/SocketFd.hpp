@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/10 14:39:08 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 21:30:16 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,11 +30,12 @@ class SocketFd : public AFileDescriptor
 	
 		Server const *	_serverInfo;
 		Request			_request;
+		bool			_responseReady;
 
 		SocketFd(void);
 
-		int		searchRequestLine();
-		int		searchHeaders();
+		bool	searchRequestLine();
+		bool	searchHeaders();
 
 	public:
 		
@@ -50,9 +51,8 @@ class SocketFd : public AFileDescriptor
 		Server const &	getServerInfo() const;
 
 		// Public methods
-		int		readRequest();
-		int		prepareResponse(int ret, int epollFd);
-		void	sendResponse(int epollFd);
+		void	readRequest(int epoll);
+		void	sendResponse(int epoll, std::map<int, AFileDescriptor *> & mapFd);
 };
 
 #endif

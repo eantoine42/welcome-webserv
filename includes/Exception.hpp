@@ -196,4 +196,31 @@ class EpollInitError : public std::exception
 		}
 };
 
+class ClientCloseConnection : public std::exception
+{
+	public:
+		char const	*what() const throw()
+		{
+			return "The client close connection";
+		}
+};
+
+class RequestError : public std::exception
+{
+	private:
+		std::string	_msg;
+
+	public:
+		RequestError(std::string msg)
+		:	_msg(msg) {}
+
+		~RequestError() throw() {};
+
+		char const	*what() const throw()
+		{
+			std::cerr << "Error while request processing" << std::endl;
+			return _msg.c_str();
+		}
+};
+
 #endif

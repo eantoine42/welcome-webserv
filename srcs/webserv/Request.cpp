@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/09 15:29:57 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 20:45:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -196,21 +196,9 @@ bool	Request::handleHeaders(std::string headers)
 /// @brief 
 /// @param messageBody 
 /// @return 
-int		Request::handleMessageBody(std::vector<unsigned char> messageBody)
+bool	Request::handleMessageBody(std::vector<unsigned char> messageBody)
 {
 	(void) messageBody;
-	return 0;
-}
-
-void	Request::print()
-{
-	std::cout << _httpMethod << " " << _pathRequest << " " << _httpVersion << std::endl;
-	std::cout << "fileName:" << _fileName << " / query: " << _queryParam << std::endl;
-	std::cout << "extension: " << _extension << std::endl;
-
-	std::map<std::string, std::string>::iterator it = _headers.begin();
-	for (; it != _headers.end(); it++)
-		std::cout << it->first << ":" << it->second << std::endl;
-
+	return true;
 }
 

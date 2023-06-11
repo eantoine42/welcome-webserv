@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/05 17:01:44 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 21:37:00 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #define WEB_SERV_HPP
 
 #include <map>
+#include <sys/epoll.h>
 #include "Server.hpp"
 #include "AFileDescriptor.hpp"
 
@@ -42,6 +43,8 @@ class WebServ
         void    addServer(std::pair<int, Server> server);
         void    epollInit();
         void    start();
+
+        static void	updateEpoll(int epoll, int fd, u_int32_t event, int mod);
         
 };
 

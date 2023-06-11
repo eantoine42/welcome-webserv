@@ -6,33 +6,37 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/11 16:56:17 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 21:52:43 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "SocketFd.hpp"
 #include "Debugger.hpp"
 #include "Response.hpp"
+#include "Exception.hpp"
+#include "WebServ.hpp"
+#include "Cgi.hpp"
 
 #include <cstddef>
+#include <sys/epoll.h>
 #include <iostream>
-#include <cstring> // bzero
 #include <unistd.h> // read
 #include <cstdio> // perror
 #include <fstream>
 #include <sys/socket.h> // recv
 #include <algorithm> // search
-#include <sys/epoll.h>
 
 /*****************
 * CANNONICAL FORM
 *****************/
 
-SocketFd::SocketFd(void) : AFileDescriptor(), _serverInfo(NULL)
+SocketFd::SocketFd(void) 
+: AFileDescriptor(), _serverInfo(NULL), _responseReady(false)
 {}
 
 SocketFd::SocketFd(SocketFd const & copy)
-	:	AFileDescriptor(copy), _serverInfo(copy._serverInfo)
+	:	AFileDescriptor(copy), _serverInfo(copy._serverInfo),
+		_responseReady(copy._responseReady)
 {}
 
 SocketFd & SocketFd::operator=(SocketFd const & rhs)
@@ -42,6 +46,7 @@ SocketFd & SocketFd::operator=(SocketFd const & rhs)
 		this->_fd = rhs._fd;
 		this->_rawData = rhs._rawData;
 		this->_open = rhs._open;
+		this->_responseReady = rhs._responseReady;
 	}
 
 	return (*this);
@@ -82,80 +87,67 @@ Server const &	SocketFd::getServerInfo() const
 
 /// @brief 
 /// @return 
-int		SocketFd::readRequest()
+void		SocketFd::readRequest(int epoll)
 {
 	char	buffer[BUFFER_SIZE];
 	ssize_t	n;
 	std::vector<unsigned char>::iterator it;
-	int ret;
 
 	if ((n = recv(this->_fd, buffer, BUFFER_SIZE, 0)) > 0)
 		this->_rawData.assign(buffer, buffer + n);
 	
 	// Try to read next time fd is NON_BLOCK and we must not check errno
 	if (n < 0)
-		return READ_AGAIN;
+		return ;
 	// Socket connection close, a EOF was present
 	if (n == 0)
-		return CLIENT_CLOSE;
+		throw ClientCloseConnection();
 	// Try to retrieve request line
-	if (_request.getHttpMethod().empty() && (ret = searchRequestLine()) != 0)
-		return (ret);
+	if (_request.getHttpMethod().empty() && searchRequestLine() == false)
+		return ;
 	// Try to retrieve headers
-	if (!_request.getHttpMethod().empty() && _request.getHeaders().empty()
-		&& (ret = searchHeaders()) != 0)
-			return (ret);
+	if (_request.getHeaders().empty() && searchHeaders() == false)
+		return ;
 	// Try to retrieve message body if necessary
-	if (_request.hasMessageBody())
-	{
-		if ((ret = _request.handleMessageBody(_rawData)) != 0)
-			return ret;
-	}
+	if (_request.hasMessageBody() && _request.handleMessageBody(_rawData) == false)
+		return ;
 	_rawData.erase(_rawData.begin(), _rawData.end());
-	return SUCCESS;
-}
-
-/// @brief 
-void	SocketFd::sendResponse(int epollFd)
-{
-	struct epoll_event ev;
-
-	send(_fd, &(_rawData[0]), _rawData.size(), 0);
-
-	bzero(&ev, sizeof(ev));
-	ev.events = EPOLLIN;
-	ev.data.fd = _fd;
-	epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd, &ev);
-}
-
-/// @brief 
-int		SocketFd::prepareResponse(int ret, int epollFd)
-{
-	(void) ret;
-	struct epoll_event ev;
+	WebServ::updateEpoll(epoll, _fd, EPOLLOUT, EPOLL_CTL_MOD);
 	
-	if (ret == ERROR)
+}
+
+/// @brief 
+void	SocketFd::sendResponse(int epoll, std::map<int, AFileDescriptor *> & mapFd)
+{
+	Cgi * cgi = NULL;
+
+	if (_responseReady == true)
 	{
-		Response::badRequest(_rawData);
-		bzero(&ev, sizeof(ev));
-		ev.events = EPOLLOUT;
-		ev.data.fd = _fd;
-		epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd, &ev);
+		send(_fd, &(_rawData[0]), _rawData.size(), 0);
+		return ;
 	}
+	
 	if (_request.getExtension().compare("php") == 0)
 	{
-		bzero(&ev, sizeof(ev));
-		ev.events = 0;
-		ev.data.fd = _fd;
-		epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd, &ev);
-		return BY_CGI;
+		cgi = new Cgi(*this);
+		if (cgi->run() < 0)
+		{
+			delete cgi;
+			Response::createResponse(_rawData);
+			_responseReady = true;
+			WebServ::updateEpoll(epoll, _fd, EPOLLOUT, EPOLL_CTL_MOD);
+			return ;
+		}
+		mapFd[cgi->getReadFd()] = cgi;
+		WebServ::updateEpoll(epoll, _fd, 0, EPOLL_CTL_MOD);
+		WebServ::updateEpoll(epoll, cgi->getReadFd(), EPOLLIN, EPOLL_CTL_ADD);
 	}
-	Response::createResponse(_rawData);
-	bzero(&ev, sizeof(ev));
-	ev.events = EPOLLOUT;
-	ev.data.fd = _fd;
-	epoll_ctl(epollFd, EPOLL_CTL_MOD, _fd, &ev);
-	return 0;
+	else
+	{
+		Response::createResponse(_rawData);
+		_responseReady = true;
+		WebServ::updateEpoll(epoll, _fd, EPOLLOUT, EPOLL_CTL_MOD);
+	}
 }
 
 
@@ -165,30 +157,30 @@ int		SocketFd::prepareResponse(int ret, int epollFd)
 * PRIVATE METHODS
 *****************/
 
-int		SocketFd::searchRequestLine()
+bool	SocketFd::searchRequestLine()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n'};
 
 	it = std::search(_rawData.begin(), _rawData.end(), src, src + 2);
 	if (it == _rawData.end())
-		return READ_AGAIN;
+		return false;
 	if (!_request.handleRequestLine(std::string(_rawData.begin(), it)))
-		return ERROR;
+		throw RequestError("Invalid request line");
 	_rawData.erase(_rawData.begin(), it);
-	return SUCCESS;
+	return true;
 }
 
-int		SocketFd::searchHeaders()
+bool	SocketFd::searchHeaders()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};
 
 	it = std::search(_rawData.begin(), _rawData.end(), src, src + 4);
 	if (it == _rawData.end())
-		return READ_AGAIN;
+		return false;
 	if (!_request.handleHeaders(std::string(_rawData.begin(), it)))
-		return ERROR;
+		throw RequestError("Invalid headers");
 	_rawData.erase(_rawData.begin(), it + 4);
-	return SUCCESS;
+	return true;
 }

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/09 15:28:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 20:45:21 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,8 +69,7 @@ class Request
 		// Members methods
 		bool	handleRequestLine(std::string requestLine);
 		bool	handleHeaders(std::string headers);
-		int		handleMessageBody(std::vector<unsigned char> messageBody);
-		void	print(); // REMOVE
+		bool	handleMessageBody(std::vector<unsigned char> messageBody);
 
 };
 

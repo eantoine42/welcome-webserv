@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/11 16:55:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/11 21:42:59 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 #include "Exception.hpp"
 #include "SocketFd.hpp"
 #include "Cgi.hpp"
-#include <sys/epoll.h> // epoll_create
 #include <cstring> // strerror, bzero
 #include <errno.h> // errno
 #include <unistd.h> // close
@@ -170,44 +169,15 @@ void	WebServ::doOnRead(int fd)
 	AFileDescriptor * fileDescriptor = this->_mapFd[fd];
 	SocketFd * socketFd = NULL;
 	Cgi * cgi = NULL;
-	int ret;
 	
 	if ((socketFd = dynamic_cast<SocketFd *>(fileDescriptor)) != NULL)
 	{
-		ret = socketFd->readRequest();
-		if (ret == CLIENT_CLOSE)
-			close(fd);
-		else if (ret == ERROR || ret == SUCCESS)
+		try {
+			socketFd->readRequest(_epollFd);
+		}
+		catch (std::exception & exception)
 		{
-			if (socketFd->prepareResponse(ret, _epollFd) == BY_CGI)
-			{
-				Cgi * cgi = new Cgi(*socketFd);
-				int	ret;
-
-				if ((ret = cgi->run()) < 0)
-				{
-					delete cgi;
-					socketFd->prepareResponse(ret, _epollFd);
-
-				}
-				else
-				{
-					_mapFd[cgi->getReadFd()] = cgi;
-					struct epoll_event	event;
-					bzero(&event, sizeof(event));
-    				event.events = EPOLLIN;
-					event.data.fd = cgi->getReadFd();
-					if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi->getReadFd(), &event) < 0)
-					{
-						close(cgi->getReadFd());
-						std::cerr << "Epoll_ctl error" << std::endl;
-						perror("epoll_ctl");
-						return ;
-					}
-
-				}
-			}
-		
+			
 		}
 	}
 	else
@@ -236,9 +206,9 @@ void	WebServ::doOnWrite(int fd)
 	//Cgi * cgi = NULL;
 	//int ret;
 	
-	if ((socketFd = reinterpret_cast<SocketFd *>(fileDescriptor)) != NULL)
+	if ((socketFd = dynamic_cast<SocketFd *>(fileDescriptor)) != NULL)
 	{
-		socketFd->sendResponse(_epollFd);
+		socketFd->sendResponse(_epollFd, _mapFd);
 	}
 	else
 	{
@@ -251,3 +221,14 @@ void	WebServ::doOnWrite(int fd)
 //{
 //	close()
 //}
+
+void	WebServ::updateEpoll(int epoll, int fd, u_int32_t event, int mod)
+{
+	struct epoll_event ev;
+
+	bzero(&ev, sizeof(ev));
+	ev.events = event;
+	ev.data.fd = fd;
+	if (epoll_ctl(epoll, mod, fd, &ev) < 0)
+		throw EpollInitError(strerror(errno));
+}
