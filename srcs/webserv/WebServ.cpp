@@ -6,13 +6,14 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/02 16:55:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/07 23:22:09 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServ.hpp"
 #include "Exception.hpp"
 #include "SocketFd.hpp"
+#include "Cgi.hpp"
 #include <sys/epoll.h> // epoll_create
 #include <cstring> // strerror
 #include <errno.h> // errno
@@ -20,13 +21,17 @@
 #include <sys/socket.h> // accept
 #include <fcntl.h> // fcntl
 
+/*****************
+* CANNONICAL FORM
+*****************/
+
 WebServ::WebServ()
 {}
 
 WebServ::WebServ(WebServ const & copy)
     :   _epollFd(copy._epollFd),
-        _mapServers(copy._mapServers),
-        _mapFileDescriptors(copy._mapFileDescriptors)
+        _mapServs(copy._mapServs),
+        _mapFd(copy._mapFd)
 {}
 
 WebServ &   WebServ::operator=(WebServ const & rhs)
@@ -34,16 +39,16 @@ WebServ &   WebServ::operator=(WebServ const & rhs)
     if (this != &rhs)
     {
         this->_epollFd = rhs._epollFd;
-        this->_mapServers = rhs._mapServers;
-        this->_mapFileDescriptors = rhs._mapFileDescriptors;
+        this->_mapServs = rhs._mapServs;
+        this->_mapFd = rhs._mapFd;
     }
     return (*this);
 }
 
 WebServ::~WebServ()
 {
-	std::map<int, AFileDescriptor *>::iterator it;
-	for (it = this->_mapFileDescriptors.begin(); it != this->_mapFileDescriptors.end(); it++)
+	std::map<int, AFileDescriptor *>::iterator it = this->_mapFd.begin();
+	for (; it != this->_mapFd.end(); it++)
 	{
 		delete it->second;
 		close(it->first);
@@ -53,15 +58,26 @@ WebServ::~WebServ()
 		close(it1->first);
 	close(this->_epollFd);
 }
+/******************************************************************************/
 
+/****************
+* PUBLIC METHODS
+****************/
+
+/// @brief Add a pair to map servers
+/// @param server <file descriptor, Server object>
 void    WebServ::addServer(std::pair<int, Server> server)
 {
-    std::pair<int, std::vector<Server> > serv;
+
+  std::pair<int, std::vector<Server> > serv;
 	serv.first = server.first;
 	serv.second.push_back(server.second);
 	this->_mapServers.insert(serv);
- }
+}
 
+
+/// @brief Init an epoll and add listening socket
+/// @throw EpollInitError
 void    WebServ::epollInit()
 {
     std::map<int, std::vector<Server> >::const_iterator   it;
@@ -72,7 +88,7 @@ void    WebServ::epollInit()
 
     bzero(&event, sizeof(event));
     event.events = EPOLLIN;
-    for (it = this->_mapServers.begin(); it != this->_mapServers.end(); it++)
+    for (it = this->_mapServs.begin(); it != this->_mapServs.end(); it++)
     {
         event.data.fd = it->first;
         if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, it->first, &event) < 0)
@@ -80,10 +96,11 @@ void    WebServ::epollInit()
     }
 }
 
+/// @brief Start webServ and handle events with epoll
 void    WebServ::start()
 {
     int nfds;
-    struct epoll_event ev, events[MAX_EVENTS];
+    struct epoll_event events[MAX_EVENTS];
     int j = 0;
 
 	while (j != 1)
@@ -96,51 +113,45 @@ void    WebServ::start()
 			int			fd = events[i].data.fd;
 			uint32_t	event = events[i].events;
 
-			if (this->_mapServers.find(fd) != this->_mapServers.end())
+			if (this->_mapServs.find(fd) != this->_mapServs.end())
 				clientConnect(fd);
 			else 
 			{
 				switch (event)
 				{
 					case EPOLLIN:
-						if (this->_mapFileDescriptors[fd]->doOnRead() == Request::requestComplete)
-						{
-							bzero(&ev, sizeof(ev));
-							ev.events = EPOLLOUT;
-							ev.data.fd = fd;
-							epoll_ctl(this->_epollFd, EPOLL_CTL_MOD, fd, &ev);
-						}
+						doOnRead(fd);
 						break;
 					case EPOLLOUT:
-						this->_mapFileDescriptors[fd]->doOnWrite();
-						// Don't close if if header alive is present
-                        delete this->_mapFileDescriptors[fd];
-						this->_mapFileDescriptors.erase(fd);
-						close(fd);
-						//j = 1;
+						doOnWrite(fd);
 						break;
 					default:
+						// TODO: Handle event error
 						std::cout << "default => event = " << event;
-						/* DEBUG_COUT("Error"); */
 				}
 			}
 
 		}
 	}
 }
+/******************************************************************************/
+
+/****************
+* PRIVATE METHODS
+****************/
 
 void    WebServ::clientConnect(int serverFd)
 {
-    int					socketConnect;
+    int					cs;
 	struct epoll_event	event;
 
-	if ((socketConnect = accept(serverFd, NULL, NULL)) < 0)
+	if ((cs = accept(serverFd, NULL, NULL)) < 0)
 	{
 		std::cerr << "Accept error" << std::endl;
 		return ;
 	}
 
-	if (fcntl(socketConnect, F_SETFL, O_NONBLOCK) < 0)
+	if (fcntl(cs, F_SETFL, O_NONBLOCK) < 0)
 	{
 		std::cerr << "Fcntl error" << std::endl;
 		return ;
@@ -148,10 +159,10 @@ void    WebServ::clientConnect(int serverFd)
 
 	bzero(&event, sizeof(event));
     event.events = EPOLLIN;
-	event.data.fd = socketConnect;
-	if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, socketConnect, &event) < 0)
+	event.data.fd = cs;
+	if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cs, &event) < 0)
 	{
-		close(socketConnect);
+		close(cs);
 		std::cerr << "Epoll_ctl error" << std::endl;
 		return ;
 	}
@@ -201,3 +212,54 @@ void 	WebServ::print_serv()
 			std::cout<<"nom de serveur : "<<(*itv).getName()<<std::endl;
 	}
 }
+
+void	WebServ::doOnRead(int fd)
+{
+	AFileDescriptor * fileDescriptor = this->_mapFd[fd];
+	SocketFd * socketFd = NULL;
+	//Cgi * cgi = NULL;
+	int ret;
+	
+	if ((socketFd = reinterpret_cast<SocketFd *>(fileDescriptor)) != NULL)
+	{
+		ret = socketFd->readRequest();
+		if (ret == CLIENT_CLOSE)
+			close(fd);
+		else if (ret == ERROR || ret == SUCCESS)
+		{
+			socketFd->prepareResponse(ret, _epollFd);
+			_mapFd.erase(fd); // REMOVE TEST
+			close(fd); // REMOVE TEST
+		}
+	}
+	else
+	{
+		//cgi = reinterpret_cast<Cgi *>(fileDescriptor);
+		//cgi->getCgiResponse();
+	}
+
+}
+
+void	WebServ::doOnWrite(int fd)
+{
+	AFileDescriptor * fileDescriptor = this->_mapFd[fd];
+	SocketFd * socketFd = NULL;
+	//Cgi * cgi = NULL;
+	//int ret;
+	
+	if ((socketFd = reinterpret_cast<SocketFd *>(fileDescriptor)) != NULL)
+	{
+		socketFd->sendResponse();
+	}
+	else
+	{
+		//cgi = reinterpret_cast<Cgi *>(fileDescriptor);
+		//cgi->sendBody();
+	}
+}
+
+//void	WebServ::popFd(int fd)
+//{
+//	close()
+//}
+

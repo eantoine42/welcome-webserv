@@ -6,14 +6,22 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/18 23:04:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/07 23:14:43 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
+#include <string>
+#include <algorithm> // all_of
+#include "Syntax.hpp"
+#include <iostream> // REMOVE
 
 int const Request::requestUncomplete = REQUEST_UNCOMPLETE;
 int const Request::requestComplete = REQUEST_COMPLETE;
+
+/*****************
+* CANNONICAL FORM
+*****************/
 
 Request::Request()
 {}
@@ -42,8 +50,12 @@ Request & Request::operator=(Request const & rhs)
 	
 Request::~Request()
 {}
+/******************************************************************************/
 
-// Geters
+/***********
+* ACCESSORS
+************/
+
 std::string const & Request::getHttpMethod() const
 {
 	return (this->_httpMethod);
@@ -74,7 +86,6 @@ bool	Request::hasMessageBody() const
 	return (false);
 }
 
-// Seters
 void	Request::setHttpMethod(std::string const & httpMethod)
 {
 	this->_httpMethod = httpMethod;
@@ -99,19 +110,87 @@ void	Request::setMessageBody(std::string const & messageBody)
 {
 	this->_messageBody = messageBody;
 }
+/******************************************************************************/
 
-// Members methods
-void	Request::fillHeaders(std::string const & data)
+/****************
+* PUBLIC METHODS
+****************/
+
+/// @brief 
+/// @param requestLine 
+/// @return 
+bool	Request::handleRequestLine(std::string requestLine)
 {
-	(void) data;
+	std::vector<std::string> vec = Syntax::splitString(requestLine, " ");
+	if (vec.size() != 3)
+		return false;
+	_httpMethod = vec[0];
+	_pathRequest = vec[1];
+	_httpVersion = vec[2];
+
+	size_t lastSlash = _pathRequest.rfind("/");
+	size_t query = _pathRequest.find("?");
+	// TODO: Add DELETE POST
+	if (_httpMethod.compare("GET") != 0)
+		return false;
+	if (_httpVersion.compare("HTTP/1.1") != 0)
+		return false;
+	if (_pathRequest[0] != '/')
+		return false;
+	// TODO: Add index to config file
+	if (_pathRequest.size() == 1)
+		_fileName = "index.html";
+	else if (query == std::string::npos)
+		_fileName = _pathRequest.substr(lastSlash);
+	else
+	{
+		_fileName = _pathRequest.substr(lastSlash, query);
+		_queryParam = _pathRequest.substr(query);
+	}
+	return true;	
 }
 
-void	Request::fillMessageBody(std::string const & data)
+/// @brief 
+/// @param headers 
+/// @return 
+bool	Request::handleHeaders(std::string headers)
 {
-	(void) data;
+	std::vector<std::string> vec = Syntax::splitString(headers, "\r\n");
+	std::vector<std::string>::iterator it = vec.begin();
+
+	for (; it != vec.end(); it++)
+	{
+		size_t sep = (*it).find(":");
+		if (sep == std::string::npos)
+			continue;
+		if (std::find_if((*it).begin(), (*it).begin() + sep, isblank) != (*it).begin()+sep)
+			continue;
+		std::string key = (*it).substr(0, sep);
+		std::string value = Syntax::trimWhitespaces((*it).substr(sep + 1));
+
+		_headers[key] = value;
+	}
+	if (_headers.find("Host") == _headers.end())
+		return false;
+	return true;
 }
 
-bool	Request::isMessageBodyTerminated()
+/// @brief 
+/// @param messageBody 
+/// @return 
+int		Request::handleMessageBody(std::vector<unsigned char> messageBody)
 {
-	return (false);
+	(void) messageBody;
+	return 0;
 }
+
+void	Request::print()
+{
+	std::cout << _httpMethod << " " << _pathRequest << " " << _httpVersion << std::endl;
+
+	std::map<std::string, std::string>::iterator it = _headers.begin();
+	for (; it != _headers.end(); it++)
+		std::cout << it->first << ":" << it->second << std::endl;
+
+}
+
