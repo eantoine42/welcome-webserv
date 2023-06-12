@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/11 21:52:43 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/12 22:07:34 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,6 +124,7 @@ void	SocketFd::sendResponse(int epoll, std::map<int, AFileDescriptor *> & mapFd)
 	if (_responseReady == true)
 	{
 		send(_fd, &(_rawData[0]), _rawData.size(), 0);
+		WebServ::updateEpoll(epoll, _fd, EPOLLIN, EPOLL_CTL_MOD);
 		return ;
 	}
 	
@@ -148,6 +149,12 @@ void	SocketFd::sendResponse(int epoll, std::map<int, AFileDescriptor *> & mapFd)
 		_responseReady = true;
 		WebServ::updateEpoll(epoll, _fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
+}
+
+void	SocketFd::responseCgi(std::string const & response)
+{
+	_responseReady = true;
+	_rawData.assign(response.begin(), response.end());
 }
 
 

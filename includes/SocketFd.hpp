@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/11 21:30:16 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/12 22:01:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ class SocketFd : public AFileDescriptor
 		// Public methods
 		void	readRequest(int epoll);
 		void	sendResponse(int epoll, std::map<int, AFileDescriptor *> & mapFd);
+		void	responseCgi(std::string const & response);
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:39:09 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/12 09:06:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/12 22:03:44 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ class Cgi : public AFileDescriptor
         int     getReadFd() const;
 
         int     run();
-        void    readCgi();
+        void    readCgi(int epollFd);
 
 
 };

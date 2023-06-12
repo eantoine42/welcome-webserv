@@ -6,12 +6,15 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/12 09:41:57 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/12 22:03:32 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Cgi.hpp"
 #include "Request.hpp"
+#include "Response.hpp"
+#include "WebServ.hpp"
+
 #include <algorithm> // replace
 #include <cstring> // toupper
 #include <unistd.h> // pipe, read
@@ -123,18 +126,23 @@ int     Cgi::run()
     return (0);
 }
 
-void    Cgi::readCgi()
+void    Cgi::readCgi(int epoll)
 {
     unsigned char buffer[BUFFER_SIZE];
     ssize_t n;
+    size_t start;
 
     if ((n = read(_fdRead, buffer, BUFFER_SIZE)) > 0)
         _rawData.insert(_rawData.end(), buffer, buffer + n);
     if (n == 0)
     {
         std::string str(_rawData.begin(), _rawData.end());
-        std::cout << str << std::endl;
+        start = str.find("\r\n\r\n") + 4;
+        str = str.substr(start);
+        str = Response::cgiSimpleResponse(str);
+        _socketInfo->responseCgi(str);
         close(_fdRead);
+        WebServ::updateEpoll(epoll, _socketInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
     }
 }
 /******************************************************************************/

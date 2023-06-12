@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/12 09:16:18 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/12 22:03:58 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -184,7 +184,7 @@ void	WebServ::doOnRead(int fd)
 	else
 	{
 		cgi = dynamic_cast<Cgi *>(fileDescriptor);
-		cgi->readCgi();
+		cgi->readCgi(_epollFd);
 	}
 
 }
@@ -206,12 +206,11 @@ void	WebServ::doOnWrite(int fd)
 		//cgi->sendBody();
 	}
 }
+/******************************************************************************/
 
-//void	WebServ::popFd(int fd)
-//{
-//	close()
-//}
-
+/***********************
+* PUBLIC STATIC METHODS
+***********************/
 void	WebServ::updateEpoll(int epoll, int fd, u_int32_t event, int mod)
 {
 	struct epoll_event ev;
