@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/11 15:39:48 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/12 09:41:57 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,9 @@
 #include "Request.hpp"
 #include <algorithm> // replace
 #include <cstring> // toupper
-#include <unistd.h> // pipe
+#include <unistd.h> // pipe, read
 #include <errno.h>
+#include <sys/fcntl.h>
 #include "Debugger.hpp"
 
 /*****************
@@ -85,10 +86,10 @@ int     Cgi::run()
 
         char ** argv = new char* [3];
         argv[0] = cgiPathCopy;
-        argv[1] = NULL; //scriptCopy;
+        argv[1] = scriptCopy;
         argv[2] = NULL;
 
-        char ** envCgi = NULL; //mapCgiParams();
+        char ** envCgi = mapCgiParams();
         
         //TODO: MAP FD
         close(pipeToCgi[1]);
@@ -113,8 +114,28 @@ int     Cgi::run()
     _fdRead = pipeFromCgi[0];
     _fdWrite = pipeToCgi[1];
     close(_fdWrite);
+    if (fcntl(_fdRead, F_SETFL, O_NONBLOCK) < 0)
+	{
+		std::cerr << "Fcntl error" << std::endl;
+		return -1;
+	}
 
     return (0);
+}
+
+void    Cgi::readCgi()
+{
+    unsigned char buffer[BUFFER_SIZE];
+    ssize_t n;
+
+    if ((n = read(_fdRead, buffer, BUFFER_SIZE)) > 0)
+        _rawData.insert(_rawData.end(), buffer, buffer + n);
+    if (n == 0)
+    {
+        std::string str(_rawData.begin(), _rawData.end());
+        std::cout << str << std::endl;
+        close(_fdRead);
+    }
 }
 /******************************************************************************/
 
@@ -127,6 +148,7 @@ char **    Cgi::mapCgiParams()
     Server const &  serverInfo = _socketInfo->getServerInfo();
     Request const & request = _socketInfo->getRequest();
     std::map<std::string, std::string> const & headers = request.getHeaders();
+    char * cwd = get_current_dir_name();
     
     std::string tab[19] = {
         std::string("AUTH_TYPE=") + "",
@@ -143,13 +165,15 @@ char **    Cgi::mapCgiParams()
         std::string("REQUEST_METHOD=") + request.getHttpMethod(),
         std::string("SCRIPT_NAME=") + request.getFileName(),
         std::string("PHP_SELF=") + request.getFileName(),
-        std::string("SCRIPT_FILENAME=/home/esquanor/Dev/welcome-webserv/index.php"),
+        std::string("SCRIPT_FILENAME=") + cwd + "/" + request.getFileName(),
         std::string("SERVER_NAME=") + serverInfo.getName(), // Get to header host ?
         std::string("SERVER_PORT=4242"), // TODO USE ITOA
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),
         //std::string("REQUEST_URI=") + request.getPathRequest()
     };
+
+    free(cwd);
 
     char ** env = new char* [headers.size() + 19 + 1];
     char * var = NULL;

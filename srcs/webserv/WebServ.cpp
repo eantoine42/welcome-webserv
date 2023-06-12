@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/11 21:42:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/12 09:16:18 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,10 +119,11 @@ void    WebServ::start()
 					doOnWrite(fd);
 				if (event & EPOLLHUP)
 				{
+					doOnRead(fd);
 					// TODO: Handle event error
-					std::cout << "default => event = " << event;
-					_mapFd.erase(fd); // REMOVE TEST
-					close(fd); // REMOVE TEST
+					// std::cout << "default => event = " << event;
+					// _mapFd.erase(fd); // REMOVE TEST
+					// close(fd); // REMOVE TEST
 				}
 			}
 
@@ -183,18 +184,7 @@ void	WebServ::doOnRead(int fd)
 	else
 	{
 		cgi = dynamic_cast<Cgi *>(fileDescriptor);
-		//cgi->getCgiResponse();
-		int n;
-		char buffer[BUFFER_SIZE];
-		if ((n = read(cgi->getReadFd(), buffer, BUFFER_SIZE)) > 0)
-		{
-			buffer[n] = '\0';
-			std::cout << buffer;
-		}
-		if (n == 0)
-			close(fd);
-			
-		
+		cgi->readCgi();
 	}
 
 }
