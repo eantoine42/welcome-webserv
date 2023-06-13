@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/12 22:07:34 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/13 16:47:18 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,6 @@ SocketFd & SocketFd::operator=(SocketFd const & rhs)
 	{
 		this->_fd = rhs._fd;
 		this->_rawData = rhs._rawData;
-		this->_open = rhs._open;
 		this->_responseReady = rhs._responseReady;
 	}
 
