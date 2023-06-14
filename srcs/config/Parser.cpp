@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/02 09:19:13 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/14 16:18:20 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -173,6 +173,6 @@ void    Parser::createServerSockets(std::vector<Server> const & servers, WebServ
         //    throw(SetServerException("Problem setting the socket"));
         if (listen(socketFd, MAX_CLIENT))
             throw(SetServerException("Problem with listen")); 
-		webServ.addServer(std::pair<int, Server>(socketFd, (*it)));  
+		webServ.addServer(socketFd, (*it));  
     }
 }

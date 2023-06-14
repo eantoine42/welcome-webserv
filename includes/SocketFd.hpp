@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/12 22:01:35 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/14 17:55:58 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,16 +18,12 @@
 #include "Server.hpp"
 
 #define BUFFER_SIZE		1024
-#define	SUCCESS			0
-#define	READ_AGAIN		1
-#define	CLIENT_CLOSE	2
-#define ERROR			3
-#define	BY_CGI			4
 
 class SocketFd : public AFileDescriptor
 {
 	private:
 	
+		std::vector<unsigned char>	_rawData;
 		Server const *	_serverInfo;
 		Request			_request;
 		bool			_responseReady;
@@ -44,15 +40,17 @@ class SocketFd : public AFileDescriptor
 		virtual ~SocketFd();
 
 		// Constructors
-		SocketFd(int fd, Server const & serverInfo);
+		SocketFd(int epollFd, int fd, Server const & serverInfo);
 
 		// Geters
 		Request const & getRequest() const;
 		Server const &	getServerInfo() const;
 
 		// Public methods
-		void	readRequest(int epoll);
-		void	sendResponse(int epoll, std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnRead(std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnWrite(std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event);
+
 		void	responseCgi(std::string const & response);
 };
 

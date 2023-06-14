@@ -14,13 +14,14 @@
 #define SERVER_CONF_HPP
 
 #include "Location.hpp"
+#include "AFileDescriptor.hpp"
 #include <string>
 #include <vector>
 #include <map>
 
 #define MAX_CLIENT 10 
 
-class Server
+class Server : public AFileDescriptor
 {
 	private:
 
@@ -74,8 +75,12 @@ class Server
 		std::vector<Location>		const &getLocation() const;
 		std::map<std::string, std::string>	const &getCgi() const;
 
+		virtual void doOnRead(std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnWrite(std::map<int, AFileDescriptor *> & mapFd);
+		virtual void doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event);
+
 		void						setServer(const std::string &str);
-		void 						cleanNames(Server &serv2);
+		// void 						cleanNames(Server &serv2);
 		void 						cleanDupServer(std::vector<Server> ServerInfo);
 
 };

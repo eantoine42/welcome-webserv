@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/13 16:47:18 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/14 17:56:24 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,8 +60,8 @@ SocketFd::~SocketFd()
 * CONSTRUCTORS
 ***************/
 
-SocketFd::SocketFd(int fd, Server const & serverInfo)
-	:	AFileDescriptor(fd), _serverInfo(&serverInfo)
+SocketFd::SocketFd(int epollFd, int fd, Server const & serverInfo)
+	:	AFileDescriptor(epollFd, fd), _serverInfo(&serverInfo)
 {}
 /******************************************************************************/
 
@@ -86,21 +86,25 @@ Server const &	SocketFd::getServerInfo() const
 
 /// @brief 
 /// @return 
-void		SocketFd::readRequest(int epoll)
+void		SocketFd::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
 {
 	char	buffer[BUFFER_SIZE];
 	ssize_t	n;
 	std::vector<unsigned char>::iterator it;
 
-	if ((n = recv(this->_fd, buffer, BUFFER_SIZE, 0)) > 0)
-		this->_rawData.assign(buffer, buffer + n);
+	if ((n = recv(_fd, buffer, BUFFER_SIZE, 0)) > 0)
+		_rawData.assign(buffer, buffer + n);
 	
 	// Try to read next time fd is NON_BLOCK and we must not check errno
 	if (n < 0)
 		return ;
 	// Socket connection close, a EOF was present
 	if (n == 0)
-		throw ClientCloseConnection();
+	{
+		close(_fd);
+		mapFd.erase(_fd);
+		return ;
+	}
 	// Try to retrieve request line
 	if (_request.getHttpMethod().empty() && searchRequestLine() == false)
 		return ;
@@ -111,43 +115,55 @@ void		SocketFd::readRequest(int epoll)
 	if (_request.hasMessageBody() && _request.handleMessageBody(_rawData) == false)
 		return ;
 	_rawData.erase(_rawData.begin(), _rawData.end());
-	WebServ::updateEpoll(epoll, _fd, EPOLLOUT, EPOLL_CTL_MOD);
-	
+	WebServ::updateEpoll(_epollFd, _fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 
 /// @brief 
-void	SocketFd::sendResponse(int epoll, std::map<int, AFileDescriptor *> & mapFd)
+void	SocketFd::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
 {
 	Cgi * cgi = NULL;
 
 	if (_responseReady == true)
 	{
 		send(_fd, &(_rawData[0]), _rawData.size(), 0);
-		WebServ::updateEpoll(epoll, _fd, EPOLLIN, EPOLL_CTL_MOD);
+		WebServ::updateEpoll(_epollFd, _fd, EPOLLIN, EPOLL_CTL_MOD);
+		_responseReady = false;
+		_request = Request();
 		return ;
 	}
 	
 	if (_request.getExtension().compare("php") == 0)
 	{
 		cgi = new Cgi(*this);
+		cgi->setEpollFd(_epollFd);
 		if (cgi->run() < 0)
 		{
 			delete cgi;
 			Response::createResponse(_rawData);
 			_responseReady = true;
-			WebServ::updateEpoll(epoll, _fd, EPOLLOUT, EPOLL_CTL_MOD);
+			WebServ::updateEpoll(_epollFd, _fd, EPOLLOUT, EPOLL_CTL_MOD);
 			return ;
 		}
 		mapFd[cgi->getReadFd()] = cgi;
-		WebServ::updateEpoll(epoll, _fd, 0, EPOLL_CTL_MOD);
-		WebServ::updateEpoll(epoll, cgi->getReadFd(), EPOLLIN, EPOLL_CTL_ADD);
+		WebServ::updateEpoll(_epollFd, _fd, 0, EPOLL_CTL_MOD);
+		WebServ::updateEpoll(_epollFd, cgi->getReadFd(), EPOLLIN, EPOLL_CTL_ADD);
 	}
 	else
 	{
 		Response::createResponse(_rawData);
 		_responseReady = true;
-		WebServ::updateEpoll(epoll, _fd, EPOLLOUT, EPOLL_CTL_MOD);
+		WebServ::updateEpoll(_epollFd, _fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
+}
+
+/// @brief 
+/// @param mapFd 
+/// @param event 
+void	SocketFd::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
+{
+	std::cout << "SocketFd on error, event = " << event << std::endl;
+	close(_fd);
+	mapFd.erase(_fd);
 }
 
 void	SocketFd::responseCgi(std::string const & response)

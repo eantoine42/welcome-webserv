@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/12 22:03:32 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/14 17:35:19 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,7 +126,9 @@ int     Cgi::run()
     return (0);
 }
 
-void    Cgi::readCgi(int epoll)
+/// @brief 
+/// @param epoll 
+void    Cgi::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
 {
     unsigned char buffer[BUFFER_SIZE];
     ssize_t n;
@@ -142,8 +144,24 @@ void    Cgi::readCgi(int epoll)
         str = Response::cgiSimpleResponse(str);
         _socketInfo->responseCgi(str);
         close(_fdRead);
-        WebServ::updateEpoll(epoll, _socketInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
+        mapFd.erase(_fdRead);
+        WebServ::updateEpoll(_epollFd, _socketInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
     }
+}
+
+/// @brief 
+void    Cgi::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
+{
+    (void) mapFd;
+}
+
+/// @brief 
+/// @param mapFd 
+/// @param event 
+void	Cgi::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
+{
+	std::cout << "SocketFd on error, event = " << event << std::endl;
+    this->doOnRead(mapFd);
 }
 /******************************************************************************/
 

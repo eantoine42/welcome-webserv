@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 15:40:16 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/12 22:25:00 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/14 17:23:08 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,20 +17,18 @@
  *****************/
 
 AFileDescriptor::AFileDescriptor(void)
-{
-}
+{}
 
 AFileDescriptor::AFileDescriptor(AFileDescriptor const &copy)
-	: _fd(copy._fd), _rawData(copy._rawData)
-{
-}
+	: _fd(copy._fd), _epollFd(copy._epollFd)
+{}
 
 AFileDescriptor &AFileDescriptor::operator=(AFileDescriptor const &rhs)
 {
 	if (this != &rhs)
 	{
-		this->_fd = rhs._fd;
-		this->_rawData = rhs._rawData;
+		_epollFd = rhs._epollFd;
+		_fd = rhs._fd;
 	}
 	return (*this);
 }
@@ -44,7 +42,8 @@ AFileDescriptor::~AFileDescriptor()
  * CONSTRUCTORS
  ***************/
 
-AFileDescriptor::AFileDescriptor(int fd) : _fd(fd)
+AFileDescriptor::AFileDescriptor(int epollFd, int fd)
+	: _fd(fd), _epollFd(epollFd)
 {}
 
 /******************************************************************************/
@@ -55,11 +54,21 @@ AFileDescriptor::AFileDescriptor(int fd) : _fd(fd)
 
 int AFileDescriptor::getFd() const
 {
-	return (this->_fd);
+	return (_fd);
 }
 
-std::vector<unsigned char> const &AFileDescriptor::getRawData() const
+int AFileDescriptor::getEpollFd() const
 {
-	return (this->_rawData);
+	return (_epollFd);
+}
+
+void	AFileDescriptor::setFd(int fd)
+{
+	_fd = fd;
+}
+
+void	AFileDescriptor::setEpollFd(int epollFd)
+{
+	_epollFd = epollFd;
 }
 /******************************************************************************/

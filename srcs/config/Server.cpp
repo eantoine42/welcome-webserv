@@ -12,14 +12,26 @@
 
 #include "Server.hpp"
 #include "Syntax.hpp"
+#include "SocketFd.hpp"
 #include "Exception.hpp"
 #include "Debugger.hpp"
+#include "WebServ.hpp"
 
 #include <cstdlib> // atoi
+#include <unistd.h> // close
+#include <sys/socket.h> // accept
+#include <fcntl.h> // fcntl
+#include <cstring> // bzero
+#include <sys/epoll.h> // epoll_ctl
 #include <algorithm>
 
+/*****************
+* CANNONICAL FORM
+*****************/
+
 Server::Server(void)
-	:	_root("html"),
+	:	AFileDescriptor(),
+		_root("html"),
 		_port(8080),
 		_server_name(""),
 		_IP("0.0.0.0"),
@@ -29,7 +41,8 @@ Server::Server(void)
 {}
 
 Server::Server(Server const &src)
-	:	_root(src._root),
+	:	AFileDescriptor(src),
+		_root(src._root),
 		_port(src._port),
 		_server_name(src._server_name),
 		_IP(src._IP),
@@ -45,15 +58,20 @@ Server	&Server::operator=(Server const &src)
 {
 		Server tmp(src);
 		std::swap(tmp, *this);
+		_fd = src._fd;
+		_epollFd = src._epollFd;
 		return (*this);
 }
 
 Server::~Server()
 {}
 
-/*
- ** Server getters
- */
+/******************************************************************************/
+
+/***********
+* ACCESSORS
+************/
+
 std::string							const &Server::getRoot() const{return (_root);}
 std::map<std::string, std::string>	const &Server::getCgi() const{return (_cgi);}
 int									const &Server::getPort() const{return (_port);}
@@ -64,122 +82,6 @@ std::string							const &Server::getIp() const{return (_IP);}
 std::string							const &Server::getError() const{return (_error_pages);}
 int									const &Server::getClientBodySize() const{return (_client_body_size);}
 std::vector<Location>				const &Server::getLocation() const{return (_location);}
-
-
-/**
- * @brief returns the number of line of location bloc
- * 
- * @param str 
- * @param count 
- * @return int 
- */
-int	Server::skipLocationBlock(std::string str, int count)
-{
-	int i = 0;
-	int in = 0;
-	int ct = 0;
-	while (str[i] && ct < count)
-	{
-		if (str[i] == '\n')
-			ct++;
-		i++;
-	}
-	i +=8;
-	while (str[i] && str[i] != '\n' && in == 0)
-	{
-		if (str[i] == '{')
-			in = 1;
-		i++;
-	}
-	ct += Syntax::findClosingBracket(str.substr(i + 2));
-	return (ct -1 - count);
-}
-
-/**
- * @brief from the config string
- * parse the Server and locations blocs
- * 
- * @param str 
- */
-void	Server::setServer(const std::string &str)
-{
-	int count = 0;
-	int pos_end = Syntax::findClosingBracket(str);
-	int location_ct = 0;
-	//DEBUG_COUT("\n****Server to parse without line Server {  \n\n" + str);
-	while (count < pos_end)
-	{
-		Server::parseServer(str, count);
-		count++;
-	}
-	count = 0;
-	while (count < pos_end)
-	{
-		if (Server::getLocationBloc(str,count) == -1)
-			count++;
-		else Server::addLocation(str, count, ++location_ct);
-	}
-	//std::cout<<*this<<std::endl;
-}
-
-int	Server::getLocationBloc(std::string str, int &count)
-{
-	std::vector<std::string> token;
-	std::string line = Syntax::getLine(str, count);
-	if ((token = Syntax::splitString(line, WHITESPACES)).empty())
-		return -1;
-	else if (Syntax::correctServerInstruction(token) != LOCATION_INSTRUCTION)
-		return -1;
-	else return 1;
-}
-
-void Server::init_vector_Server_fct(std::vector<Server_func> &funcs)
-{
-	funcs.push_back(&Server::setRoot);
-	funcs.push_back(&Server::setPort);
-	funcs.push_back(&Server::setName);
-	funcs.push_back(&Server::setError);
-	funcs.push_back(&Server::setIndex);
-	funcs.push_back(&Server::setAutoindex);
-	funcs.push_back(&Server::setClientBodySize);
-	funcs.push_back(&Server::setCgi);
-}
-
-
-/**
- * @brief fills all the Server data
- * 
- * @param str 
- */
-void	Server::parseServer(std::string str, int &count)
-{
-	std::vector<Server_func>	funcs;
-	init_vector_Server_fct(funcs);
-
-	std::vector<std::string> token;
-	int instruct;
-	std::string line = Syntax::getLine(str, count);
-	if ((token = Syntax::splitString(line, WHITESPACES)).empty())
-		return ;
-	else if ((instruct = Syntax::correctServerInstruction(token)) != -1)
-	{
-		if (instruct == LOCATION_INSTRUCTION)
-			count += skipLocationBlock(str, count);
-		else
-			if (instruct < TOTAL_SERVER_INSTRUCTIONS && instruct != LOCATION_INSTRUCTION)
-				(this->*funcs[instruct])(token);		
-	}
-	else
-		throw (ConfFileParseError("Wrong input in Server : Directive " + token[0]+" invalid"));
-}
-
-void	Server::addLocation(std::string str, int &count, int &Server_ct)
-{
-	Location loc(getPort(),Server_ct, getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize());
-	loc.setLocation(str, count);
-	this->_location.push_back(loc);
-}
-
 
 void	Server::setRoot(std::vector<std::string> token)
 {
@@ -306,7 +208,14 @@ void	Server::setClientBodySize(std::vector<std::string> token)
 	_client_body_size = atoi(token[1].erase(token[1].size() - 1).c_str());
 }
 
+/******************************************************************************/
 
+/****************
+* PUBLIC METHODS
+****************/
+
+/// @brief 
+/// @param Server_info 
 void Server::cleanDupServer(std::vector<Server> Server_info)
 {
 	if (Server_info.size() == 0)
@@ -346,6 +255,176 @@ void Server::cleanDupServer(std::vector<Server> Server_info)
 
 }
 
+/**
+ * @brief from the config string
+ * parse the Server and locations blocs
+ * 
+ * @param str 
+ */
+void	Server::setServer(const std::string &str)
+{
+	int count = 0;
+	int pos_end = Syntax::findClosingBracket(str);
+	int location_ct = 0;
+	//DEBUG_COUT("\n****Server to parse without line Server {  \n\n" + str);
+	while (count < pos_end)
+	{
+		Server::parseServer(str, count);
+		count++;
+	}
+	count = 0;
+	while (count < pos_end)
+	{
+		if (Server::getLocationBloc(str,count) == -1)
+			count++;
+		else Server::addLocation(str, count, ++location_ct);
+	}
+	//std::cout<<*this<<std::endl;
+}
+
+void	Server::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
+{
+    int		cs;
+
+	if ((cs = accept(_fd, NULL, NULL)) < 0)
+	{
+		std::cerr << "Accept error" << std::endl;
+		return ;
+	}
+
+	if (fcntl(cs, F_SETFL, O_NONBLOCK) < 0)
+		throw FileDescriptorError(strerror(errno));
+
+	try
+	{
+		WebServ::updateEpoll(_epollFd, cs, EPOLLIN, EPOLL_CTL_ADD);
+	} 
+	catch (EpollInitError & e)
+	{
+		close(cs);
+		throw e;
+	}
+
+	mapFd[cs] = new SocketFd(_epollFd, cs, *this);
+}
+
+void	Server::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
+{
+	(void) mapFd;
+}
+
+void	Server::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
+{
+	(void) mapFd;
+	std::cout << "SocketFd on error, event = " << event << std::endl;
+}
+/******************************************************************************/
+
+/*****************
+* PRIVATE METHODS
+*****************/
+
+/**
+ * @brief returns the number of line of location bloc
+ * 
+ * @param str 
+ * @param count 
+ * @return int 
+ */
+int	Server::skipLocationBlock(std::string str, int count)
+{
+	int i = 0;
+	int in = 0;
+	int ct = 0;
+	while (str[i] && ct < count)
+	{
+		if (str[i] == '\n')
+			ct++;
+		i++;
+	}
+	i +=8;
+	while (str[i] && str[i] != '\n' && in == 0)
+	{
+		if (str[i] == '{')
+			in = 1;
+		i++;
+	}
+	ct += Syntax::findClosingBracket(str.substr(i + 2));
+	return (ct -1 - count);
+}
+
+/// @brief 
+/// @param str 
+/// @param count 
+/// @return 
+int	Server::getLocationBloc(std::string str, int &count)
+{
+	std::vector<std::string> token;
+	std::string line = Syntax::getLine(str, count);
+	if ((token = Syntax::splitString(line, WHITESPACES)).empty())
+		return -1;
+	else if (Syntax::correctServerInstruction(token) != LOCATION_INSTRUCTION)
+		return -1;
+	else return 1;
+}
+
+/// @brief 
+/// @param funcs 
+void Server::init_vector_Server_fct(std::vector<Server_func> &funcs)
+{
+	funcs.push_back(&Server::setRoot);
+	funcs.push_back(&Server::setPort);
+	funcs.push_back(&Server::setName);
+	funcs.push_back(&Server::setError);
+	funcs.push_back(&Server::setIndex);
+	funcs.push_back(&Server::setAutoindex);
+	funcs.push_back(&Server::setClientBodySize);
+	funcs.push_back(&Server::setCgi);
+}
+
+/**
+ * @brief fills all the Server data
+ * 
+ * @param str 
+ */
+void	Server::parseServer(std::string str, int &count)
+{
+	std::vector<Server_func>	funcs;
+	init_vector_Server_fct(funcs);
+
+	std::vector<std::string> token;
+	int instruct;
+	std::string line = Syntax::getLine(str, count);
+	if ((token = Syntax::splitString(line, WHITESPACES)).empty())
+		return ;
+	else if ((instruct = Syntax::correctServerInstruction(token)) != -1)
+	{
+		if (instruct == LOCATION_INSTRUCTION)
+			count += skipLocationBlock(str, count);
+		else
+			if (instruct < TOTAL_SERVER_INSTRUCTIONS && instruct != LOCATION_INSTRUCTION)
+				(this->*funcs[instruct])(token);		
+	}
+	else
+		throw (ConfFileParseError("Wrong input in Server : Directive " + token[0]+" invalid"));
+}
+
+/// @brief 
+/// @param str 
+/// @param count 
+/// @param Server_ct 
+void	Server::addLocation(std::string str, int &count, int &Server_ct)
+{
+	Location loc(getPort(),Server_ct, getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize());
+	loc.setLocation(str, count);
+	this->_location.push_back(loc);
+}
+/******************************************************************************/
+
+/***********
+* FUNCTIONS
+************/
+
 std::ostream    &operator<<(std::ostream &o, Server const &i)
 {
 
@@ -384,3 +463,4 @@ std::ostream    &operator<<(std::ostream &o, std::vector<Server>  const &srv)
 }
 
 //TODO ignore a Server if same ip:port or name
+/******************************************************************************/
