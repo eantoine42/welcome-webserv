@@ -30,9 +30,9 @@ class Server : public AFileDescriptor
 		std::string							_server_name;
 		std::string							_IP;
 		std::string							_error_pages;
-		std::string							_index;
+		std::vector<std::string>			_index;
 		bool								_autoindex;
-		int									_client_body_size;
+		long int							_client_body_size;
 		std::map<std::string, std::string>	_cgi;
 		std::vector<Location>				_location;
 
@@ -69,9 +69,9 @@ class Server : public AFileDescriptor
 		std::string					const &getName() const;
 		std::string					const &getIp() const;
 		std::string					const &getError() const;
-		std::string					const &getIndex() const;
+		std::vector<std::string>	const &getIndex() const;
 		bool						const &getAutoindex() const;
-		int							const &getClientBodySize() const;
+		long int					const &getClientBodySize() const;
 		std::vector<Location>		const &getLocation() const;
 		std::map<std::string, std::string>	const &getCgi() const;
 
@@ -88,5 +88,5 @@ class Server : public AFileDescriptor
 std::ostream    &operator<<(std::ostream &o, Server const &i);
 
 std::ostream    &operator<<(std::ostream &o, std::vector<Server>  const &srv);
-
+std::ostream    &operator<<(std::ostream &o, std::vector<std::string>  const &str);
 #endif

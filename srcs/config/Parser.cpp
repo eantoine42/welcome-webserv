@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/14 16:18:20 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 17:45:10 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,6 @@ void    Parser::parseConfFile(WebServ & webServ) const
 	Syntax::formatConfFile(conf_string_formated);
 	conf_string_formated.erase(conf_string_formated.size() - 1);
 	parseServers(server_list, conf_string_formated);
-
     createServerSockets(server_list, webServ);
 }
 
@@ -144,35 +143,41 @@ void    Parser::createServerSockets(std::vector<Server> const & servers, WebServ
 
 	for (it = servers.begin(); it != servers.end(); it++)
 	{
-        int	socketFd, enabled = 1;
-        struct sockaddr_in sockaddr;
-        struct protoent *proto;
+        int i = webServ.avoidDoubleSocket(*it);
+		if (i >=0)
+			webServ.addServerInVector(i, *it);
+		else
+		{		
+			int	socketFd, enabled = 1;
+			struct sockaddr_in sockaddr;
+			struct protoent *proto;
 
-        //The getprotobyname function is a part of the C library functions which is used to map a protocol name such as 
-        // "tcp" to the corresponding protocol number defined in the netinet/in.h header file.
-        if (!(proto = getprotobyname("tcp")))
-            throw(SetServerException("Problem using protobyname, protocol not found"));
-        if ((socketFd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) == -1)
-            throw(SetServerException("Problem creating Socket"));
-        DEBUG_COUT("Server " + (*it).getName() + " created");
-        // allows a socket to be bound to an address that is already in use, provided that the original socket using the address is no longer active. 
-        //This behavior is useful in cases where the server needs to restart after a crash or when multiple instances of the server need to run on the same machine.
-        //This option allows the socket to be bound to a previously used address and port, which is useful in cases where the socket is closed and then immediately reopened,
-        // without waiting for the operating system to release the socket resources. Without this option,
-        //the socket may fail to bind to the address and port, resulting in a "Address already in use" error.
-        if (setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled)) == -1)
-            throw(SetServerException("Problem setting Socket options"));//
-        sockaddr.sin_family = AF_INET;
-        sockaddr.sin_port = htons((*it).getPort());
-        sockaddr.sin_addr.s_addr = inet_addr((*it).getIp().c_str());
-        if (bind(socketFd, reinterpret_cast<struct sockaddr *>(&sockaddr), sizeof(sockaddr)) == -1)
-            throw(SetServerException("Problem binding socket"));
-        DEBUG_COUT("Server with file descriptor " <<  socketFd << " has been successfully bind on port: " << (*it).getPort());
+			//The getprotobyname function is a part of the C library functions which is used to map a protocol name such as 
+			// "tcp" to the corresponding protocol number defined in the netinet/in.h header file.
+			if (!(proto = getprotobyname("tcp")))
+				throw(SetServerException("Problem using protobyname, protocol not found"));
+			if ((socketFd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) == -1)
+				throw(SetServerException("Problem creating Socket"));
+			DEBUG_COUT("Server " + (*it).getName() + " created");
+			// allows a socket to be bound to an address that is already in use, provided that the original socket using the address is no longer active. 
+			//This behavior is useful in cases where the server needs to restart after a crash or when multiple instances of the server need to run on the same machine.
+			//This option allows the socket to be bound to a previously used address and port, which is useful in cases where the socket is closed and then immediately reopened,
+			// without waiting for the operating system to release the socket resources. Without this option,
+			//the socket may fail to bind to the address and port, resulting in a "Address already in use" error.
+			if (setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled)) == -1)
+				throw(SetServerException("Problem setting Socket options"));//
+			sockaddr.sin_family = AF_INET;
+			sockaddr.sin_port = htons((*it).getPort());
+			sockaddr.sin_addr.s_addr = inet_addr((*it).getIp().c_str());
+			if (bind(socketFd, reinterpret_cast<struct sockaddr *>(&sockaddr), sizeof(sockaddr)) == -1)
+				throw(SetServerException("Problem binding socket"));
+			DEBUG_COUT("Server with file descriptor " <<  socketFd << " has been successfully bind on port: " << (*it).getPort());
 
-        //if (fcntl(socketFd, F_SETFL, O_NONBLOCK) == -1) //makes the socket nonblock
-        //    throw(SetServerException("Problem setting the socket"));
-        if (listen(socketFd, MAX_CLIENT))
-            throw(SetServerException("Problem with listen")); 
-		webServ.addServer(socketFd, (*it));  
+			//if (fcntl(socketFd, F_SETFL, O_NONBLOCK) == -1) //makes the socket nonblock
+			//    throw(SetServerException("Problem setting the socket"));
+			if (listen(socketFd, MAX_CLIENT))
+				throw(SetServerException("Problem with listen")); 
+			webServ.addServer(std::pair<int, Server>(socketFd, (*it)));  
+		}
     }
 }

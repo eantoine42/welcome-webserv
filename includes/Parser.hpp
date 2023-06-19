@@ -26,7 +26,7 @@ class Parser
         std::string     getStringConf() const;
         void            parseServers(std::vector<Server> & servers, std::string strConfig) const;
         void            createServerSockets(std::vector<Server> const & servers, WebServ & webServ) const;
-
+		int				avoid_double_socket(std::vector<Server> const & servers);
     public:
 
     	// Cannonical Form

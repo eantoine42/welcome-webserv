@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/14 17:55:58 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 17:42:07 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,9 +22,8 @@
 class SocketFd : public AFileDescriptor
 {
 	private:
-	
 		std::vector<unsigned char>	_rawData;
-		Server const *	_serverInfo;
+		std::vector<Server> const *	_serverInfo;
 		Request			_request;
 		bool			_responseReady;
 
@@ -40,7 +39,9 @@ class SocketFd : public AFileDescriptor
 		virtual ~SocketFd();
 
 		// Constructors
-		SocketFd(int epollFd, int fd, Server const & serverInfo);
+		SocketFd(int fd, std::vector<Server> const * serverInfo);
+
+
 
 		// Geters
 		Request const & getRequest() const;

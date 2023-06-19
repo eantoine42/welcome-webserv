@@ -257,7 +257,8 @@ std::vector<std::string> Syntax::splitString(std::string str, const std::string 
     while ((pos = str.find_first_of(charset)) != std::string::npos)
 	{
         token = str.substr(0, pos);
-        tokens.push_back(token);
+        if(token.compare(""))
+			tokens.push_back(token);
         str.erase(0, pos + 1);
     }
     tokens.push_back(str);
@@ -526,6 +527,78 @@ void Syntax::fill_response_status_map(std::map<status_code_t, std::string> &map)
 	map.insert(std::pair<status_code_t, std::string>(SERVICE_UNAVAILABLE,"Service Unavailable"));
 	map.insert(std::pair<status_code_t, std::string>(GATEWAY_TIMEOUT,"Gateway Timeout"));
 	map.insert(std::pair<status_code_t, std::string>(HTTP_VERSION_NOT_SUPPORTED,"HTTP Version Not Supported"));
+}
+
+void Syntax::fillMimeTypeMap(std::map<std::string, std::string> &map)
+ {
+	map.insert(std::pair<std::string, std::string>(".aac", "audio/aac"));
+	map.insert(std::pair<std::string, std::string>(".abw", "application/x-abiword"));
+	map.insert(std::pair<std::string, std::string>(".arc", "application/octet-stream"));
+	map.insert(std::pair<std::string, std::string>(".avi", "video/x-msvideo"));
+	map.insert(std::pair<std::string, std::string>(".azw", "application/vnd.amazon.ebook"));
+	map.insert(std::pair<std::string, std::string>(".bin", "application/octet-stream"));
+	map.insert(std::pair<std::string, std::string>(".bmp", "image/bmp"));
+	map.insert(std::pair<std::string, std::string>(".bz", "application/x-bzip"));
+	map.insert(std::pair<std::string, std::string>(".bz2", "application/x-bzip2"));
+	map.insert(std::pair<std::string, std::string>(".csh", "application/x-csh"));
+	map.insert(std::pair<std::string, std::string>(".css", "text/css"));
+	map.insert(std::pair<std::string, std::string>(".csv", "text/csv"));
+	map.insert(std::pair<std::string, std::string>(".txt", "text/plain"));
+	map.insert(std::pair<std::string, std::string>(".doc", "application/msword"));
+	map.insert(std::pair<std::string, std::string>(".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+	map.insert(std::pair<std::string, std::string>(".eot", "application/vnd.ms-fontobject"));
+	map.insert(std::pair<std::string, std::string>(".epub", "application/epub+zip"));
+	map.insert(std::pair<std::string, std::string>(".gif", "image/gif"));
+	map.insert(std::pair<std::string, std::string>(".htm", "text/html"));
+	map.insert(std::pair<std::string, std::string>(".html", "text/html"));
+	map.insert(std::pair<std::string, std::string>(".ico", "image/x-icon"));
+	map.insert(std::pair<std::string, std::string>(".ics", "text/calendar"));
+	map.insert(std::pair<std::string, std::string>(".jar", "application/java-archive"));
+	map.insert(std::pair<std::string, std::string>(".jpeg", "image/jpeg"));
+	map.insert(std::pair<std::string, std::string>(".jpg", "image/jpeg"));
+	map.insert(std::pair<std::string, std::string>(".js", "application/javascript"));
+	map.insert(std::pair<std::string, std::string>(".json", "application/json"));
+	map.insert(std::pair<std::string, std::string>(".mid", "audio/midi"));
+	map.insert(std::pair<std::string, std::string>(".midi", "audio/midi"));
+	map.insert(std::pair<std::string, std::string>(".mpeg", "video/mpeg"));
+	map.insert(std::pair<std::string, std::string>(".mpkg", "application/vnd.apple.installer+xml"));
+	map.insert(std::pair<std::string, std::string>(".odp", "application/vnd.oasis.opendocument.presentation"));
+	map.insert(std::pair<std::string, std::string>(".ods", "application/vnd.oasis.opendocument.spreadsheet"));
+	map.insert(std::pair<std::string, std::string>(".odt", "application/vnd.oasis.opendocument.text"));
+	map.insert(std::pair<std::string, std::string>(".oga", "audio/ogg"));
+	map.insert(std::pair<std::string, std::string>(".ogv", "video/ogg"));
+	map.insert(std::pair<std::string, std::string>(".ogx", "application/ogg"));
+	map.insert(std::pair<std::string, std::string>(".otf", "font/otf"));
+	map.insert(std::pair<std::string, std::string>(".png", "image/png"));
+	map.insert(std::pair<std::string, std::string>(".pdf", "application/pdf"));
+	map.insert(std::pair<std::string, std::string>(".ppt", "application/vnd.ms-powerpoint"));
+	map.insert(std::pair<std::string, std::string>(".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"));
+	map.insert(std::pair<std::string, std::string>(".rar", "application/x-rar-compressed"));
+	map.insert(std::pair<std::string, std::string>(".rtf", "application/rtf"));
+	map.insert(std::pair<std::string, std::string>(".sh", "application/x-sh"));
+	map.insert(std::pair<std::string, std::string>(".svg", "image/svg+xml"));
+	map.insert(std::pair<std::string, std::string>(".swf", "application/x-shockwave-flash"));
+	map.insert(std::pair<std::string, std::string>(".tar", "application/x-tar"));
+	map.insert(std::pair<std::string, std::string>(".tif", "image/tiff"));
+	map.insert(std::pair<std::string, std::string>(".tiff", "image/tiff"));
+	map.insert(std::pair<std::string, std::string>(".ts", "application/typescript"));
+	map.insert(std::pair<std::string, std::string>(".ttf", "font/ttf"));
+	map.insert(std::pair<std::string, std::string>(".vsd", "application/vnd.visio"));
+	map.insert(std::pair<std::string, std::string>(".wav", "audio/x-wav"));
+	map.insert(std::pair<std::string, std::string>(".weba", "audio/webm"));
+	map.insert(std::pair<std::string, std::string>(".webm", "video/webm"));
+	map.insert(std::pair<std::string, std::string>(".webp", "image/webp"));
+	map.insert(std::pair<std::string, std::string>(".woff", "font/woff"));
+	map.insert(std::pair<std::string, std::string>(".woff2", "font/woff2"));
+	map.insert(std::pair<std::string, std::string>(".xhtml", "application/xhtml+xml"));
+	map.insert(std::pair<std::string, std::string>(".xls", "application/vnd.ms-excel"));
+	map.insert(std::pair<std::string, std::string>(".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+	map.insert(std::pair<std::string, std::string>(".xml", "application/xml"));
+	map.insert(std::pair<std::string, std::string>(".xul", "application/vnd.mozilla.xul+xml"));
+	map.insert(std::pair<std::string, std::string>(".zip", "application/zip"));
+	map.insert(std::pair<std::string, std::string>(".3gp", "video/3gpp"));
+	map.insert(std::pair<std::string, std::string>(".3g2", "video/3gpp2"));
+	map.insert(std::pair<std::string, std::string>(".7z", "application/x-7z-compressed"));
 }
 
 std::string	Syntax::getFormattedDate(std::time_t time)

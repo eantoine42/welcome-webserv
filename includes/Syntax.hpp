@@ -161,32 +161,36 @@ class Syntax {
 			std::string		name;
 		};
 
-		static std::map<status_code_t, std::string> _response_status_map;
-		static const method_tab_entry_t					method_tab[];
-		static const server_instruction_tab_entry_t 	server_instructions_tab[];
-		static const location_instruction_tab_entry_t 	location_instructions_tab[];
-		static const request_header_tab_entry_t					request_header_tab[];
-		static const answer_header_tab_entry_t					answer_header_tab[];
 
-		static std::string	trimComments(const std::string &str);
-		static std::string	trimWhitespaces(const std::string& str);
-		static std::string  replaceConsecutiveSpaces(const std::string& str);
-		static std::string  getLine(std::string str, size_t n);
-		static size_t 		nbLines(std::string &str_config);
-		static bool 		isNothing(std::string str, int pos = 0);
-		static bool 		checkBrackets(std::string &config_string);
-		static void 		testPath(const std::string &path);
-		static std::string 	trimLineToI(std::string &str, size_t pos);
-		static int			findClosingBracket(std::string str);
+
+		static std::map<status_code_t, std::string> 		_response_status_map;
+		static const method_tab_entry_t						method_tab[];
+		static const server_instruction_tab_entry_t 		server_instructions_tab[];
+		static const location_instruction_tab_entry_t 		location_instructions_tab[];
+		static const request_header_tab_entry_t				request_header_tab[];
+		static const answer_header_tab_entry_t				answer_header_tab[];
+		static const std::map<std::string, std::string>		_mime_types_map;
+
+		static std::string				trimComments(const std::string &str);
+		static std::string				trimWhitespaces(const std::string& str);
+		static std::string				replaceConsecutiveSpaces(const std::string& str);
+		static std::string				getLine(std::string str, size_t n);
+		static size_t 					nbLines(std::string &str_config);
+		static bool 					isNothing(std::string str, int pos = 0);
+		static bool 					checkBrackets(std::string &config_string);
+		static void 					testPath(const std::string &path);
+		static std::string 				trimLineToI(std::string &str, size_t pos);
+		static int						findClosingBracket(std::string str);
 		static std::vector<std::string> splitString(std::string str, const std::string &charset = " ");
-		static void 		formatConfFile(std::string &conf);
-		static char 		checkChar(std::string str);
-		static std::string 	intToString(int num);
-		static int 	correctServerInstruction(std::vector<std::string> token);
-		static int 	correctLocationInstruction(std::vector<std::string> token);
-		static int 	correctMethodInstruction(std::vector<std::string> token);
-		static void fill_response_status_map(std::map<status_code_t, std::string> &map);
-		static std::string	getFormattedDate(std::time_t time);
+		static void 					formatConfFile(std::string &conf);
+		static char 					checkChar(std::string str);
+		static std::string 				intToString(int num);
+		static int 						correctServerInstruction(std::vector<std::string> token);
+		static int 						correctLocationInstruction(std::vector<std::string> token);
+		static int 						correctMethodInstruction(std::vector<std::string> token);
+		static void 					fill_response_status_map(std::map<status_code_t, std::string> &map);
+		static void 					fillMimeTypeMap(std::map<std::string, std::string> &mime_types_map);
+		static std::string				getFormattedDate(std::time_t time);
 
 
 	private:

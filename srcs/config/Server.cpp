@@ -35,10 +35,12 @@ Server::Server(void)
 		_port(8080),
 		_server_name(""),
 		_IP("0.0.0.0"),
-		_index("index index.html"),
 		_autoindex(false),
-		_client_body_size(1)
-{}
+		_client_body_size(1000000)
+{
+	_index.push_back("index");
+	_index.push_back("index.html");
+}
 
 Server::Server(Server const &src)
 	:	AFileDescriptor(src),
@@ -76,12 +78,96 @@ std::string							const &Server::getRoot() const{return (_root);}
 std::map<std::string, std::string>	const &Server::getCgi() const{return (_cgi);}
 int									const &Server::getPort() const{return (_port);}
 std::string							const &Server::getName() const{return (_server_name);}
-std::string							const &Server::getIndex() const{return (_index);	}
+std::vector<std::string>			const &Server::getIndex() const{return (_index);	}
 bool								const &Server::getAutoindex() const{return (_autoindex);}
 std::string							const &Server::getIp() const{return (_IP);}
 std::string							const &Server::getError() const{return (_error_pages);}
-int									const &Server::getClientBodySize() const{return (_client_body_size);}
+long int							const &Server::getClientBodySize() const{return (_client_body_size);}
 std::vector<Location>				const &Server::getLocation() const{return (_location);}
+
+/**
+ * @brief from the config string
+ * parse the Server and locations blocs
+ * 
+ * @param str 
+ */
+void	Server::setServer(const std::string &str)
+{
+	int count = 0;
+	int pos_end = Syntax::findClosingBracket(str);
+	int location_ct = 0;
+	while (count < pos_end)
+	{
+		Server::parseServer(str, count);
+		count++;
+	}
+	count = 0;
+	while (count < pos_end)
+	{
+		if (Server::getLocationBloc(str,count) == -1)
+			count++;
+		else Server::addLocation(str, count, ++location_ct);
+	}
+	//std::cout<<*this<<std::endl;
+}
+
+int	Server::getLocationBloc(std::string str, int &count)
+{
+	std::vector<std::string> token;
+	std::string line = Syntax::getLine(str, count);
+	if ((token = Syntax::splitString(line, WHITESPACES)).empty())
+		return -1;
+	else if (Syntax::correctServerInstruction(token) != LOCATION_INSTRUCTION)
+		return -1;
+	else return 1;
+}
+
+void Server::init_vector_Server_fct(std::vector<Server_func> &funcs)
+{
+	funcs.push_back(&Server::setRoot);
+	funcs.push_back(&Server::setPort);
+	funcs.push_back(&Server::setName);
+	funcs.push_back(&Server::setError);
+	funcs.push_back(&Server::setIndex);
+	funcs.push_back(&Server::setAutoindex);
+	funcs.push_back(&Server::setClientBodySize);
+	funcs.push_back(&Server::setCgi);
+}
+
+
+/**
+ * @brief fills all the Server data
+ * 
+ * @param str 
+ */
+void	Server::parseServer(std::string str, int &count)
+{
+	std::vector<Server_func>	funcs;
+	init_vector_Server_fct(funcs);
+
+	std::vector<std::string> token;
+	int instruct;
+	std::string line = Syntax::getLine(str, count);
+	if ((token = Syntax::splitString(line, WHITESPACES)).empty())
+		return ;
+	else if ((instruct = Syntax::correctServerInstruction(token)) != -1)
+	{
+		if (instruct == LOCATION_INSTRUCTION)
+			count += skipLocationBlock(str, count);
+		else
+			if (instruct < TOTAL_SERVER_INSTRUCTIONS && instruct != LOCATION_INSTRUCTION)
+				(this->*funcs[instruct])(token);		
+	}
+	else
+		throw (ConfFileParseError("Wrong input in Server : Directive " + token[0]+" invalid"));
+}
+
+void	Server::addLocation(std::string str, int &count, int &Server_ct)
+{
+	Location loc(getPort(),Server_ct, getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize());
+	loc.setLocation(str, count);
+	this->_location.push_back(loc);
+}
 
 void	Server::setRoot(std::vector<std::string> token)
 {
@@ -176,13 +262,19 @@ void	Server::setError(std::vector<std::string> token)
 
 void	Server::setIndex(std::vector<std::string> token)
 {
-	_index = "";
+	_index.clear();
 	size_t i = 1;
 	if (token.size() < 2)
 		throw(ConfFileParseError("problem with number of arguments for index"));
-	for (; i < token.size() - 1; i++)
-		_index += token[i] + " ";
-	_index += token[i].erase(token[i].size() - 1);
+	for (; i < token.size() ; i++)
+	{
+		if (token[i].compare(" "))
+		{
+			if (i == token.size() - 1)
+				token[i].erase(token[i].size() - 1);
+			_index.push_back(token[i]);
+		}
+	}
 }
 
 void	Server::setAutoindex(std::vector<std::string> token)
@@ -205,7 +297,21 @@ void	Server::setClientBodySize(std::vector<std::string> token)
 {
 	if (token.size() > 2)
 		throw(ConfFileParseError("Only one client body size max"));
+	std::string str = token[1].erase(token[1].size() - 1);
+	size_t i=0;
+	while (i < str.length() && (std::isspace(str[i]) || std::isdigit(str[i])))
+		i++;
+	if (str.length()!=i && str[i]!='M' && str[i]!='m' && str[i]!='G' && str[i]!='g' && str[i]!='k' && str[i]!='K')
+		throw(ConfFileParseError("error client body size syntax"));
+	if (str.length()!=i && str.length() !=i+1)
+		throw(ConfFileParseError("error client body size syntax"));
 	_client_body_size = atoi(token[1].erase(token[1].size() - 1).c_str());
+	if (str[i] && (str[i]=='M' || str[i]=='m'))
+		_client_body_size *=1000000;
+	else if (str[i] && (str[i]=='G' || str[i]=='g'))
+		_client_body_size *=1000000000;
+	else if (str[i] && (str[i]=='k' || str[i]=='K'))
+		_client_body_size *=1000;
 }
 
 /******************************************************************************/
@@ -438,7 +544,9 @@ std::ostream    &operator<<(std::ostream &o, Server const &i)
 	if (i.getRoot().empty() == false)
 		o << "    root			=	[" << i.getRoot() << "]" << std::endl;
 	if (i.getIndex().empty() == false)
+	{
 		o << "    indexPage			=	[" << i.getIndex() << "]" << std::endl;
+	}
 	o << "    autoindex			=	[" << i.getAutoindex() << "]" << std::endl;
 	if (i.getError().empty() == false)
 		o << "    errorPage			=	[" << i.getError() << "]" << std::endl;
@@ -453,14 +561,19 @@ std::ostream    &operator<<(std::ostream &o, Server const &i)
 	for (size_t j = 0; j< i.getLocation().size(); j++)
 		o<<i.getLocation()[j]<< std::endl;
 	return (o);
-};
+}
 
-std::ostream    &operator<<(std::ostream &o, std::vector<Server>  const &srv)
+
+std::ostream    &operator<<(std::ostream &o, std::vector<std::string>  const &str)
 {
-	for (size_t i = 0; i< srv.size(); i++)
-		o<<srv[i]<< std::endl;
+	for (size_t i = 0; i< str.size(); i++)
+	if (i< str.size() - 1)
+		o<<str[i]<< " ; ";
+	else 
+		o<<str[i];
 	return (o);
 }
 
-//TODO ignore a Server if same ip:port or name
-/******************************************************************************/
+//TODO ignore a Server if same ip:port or name eou add server 
+//TODO verifier si chunk notre reponse en fonction maxbodysize
+//TODO sur quel critere la reponse est chunkee

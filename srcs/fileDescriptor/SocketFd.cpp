@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/14 20:57:55 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 17:51:39 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,9 +59,8 @@ SocketFd::~SocketFd()
 /**************
 * CONSTRUCTORS
 ***************/
-
-SocketFd::SocketFd(int epollFd, int fd, Server const & serverInfo)
-	:	AFileDescriptor(epollFd, fd), _serverInfo(&serverInfo)
+SocketFd::SocketFd(int fd, std::vector<Server> const * serverInfo)
+	:	AFileDescriptor(fd), _serverInfo(serverInfo)
 {}
 /******************************************************************************/
 
