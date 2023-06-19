@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/19 20:01:57 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 20:24:59 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,9 +57,20 @@ ServerConf::ServerConf(ServerConf const &src)
 
 ServerConf &ServerConf::operator=(ServerConf const &src)
 {
-	ServerConf tmp(src);
-	std::swap(tmp, *this);
-	return (*this);
+	if (this != &src)
+	{
+		_root = src._root;
+	  	_port = src._port;
+	  	_server_name = src._server_name;
+	  	_IP = src._IP;
+	  	_error_pages = src._error_pages;
+	  	_index = src._index;
+	  	_autoindex = src._autoindex;
+	  	_client_body_size = src._client_body_size;
+	  	_cgi = src._cgi;
+	  	_location = src._location;
+	}
+	return *this;
 }
 
 ServerConf::~ServerConf()
