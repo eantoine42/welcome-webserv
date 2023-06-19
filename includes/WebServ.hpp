@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/19 17:44:00 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 19:29:47 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,10 +41,6 @@ class WebServ
 
 
         static void	updateEpoll(int epoll, int fd, u_int32_t event, int mod);
-
-		int	avoidDoubleSocket(Server const & servers);
-		void	addServerInVector(int, Server const & servers);
-		void	print_serv();
 
         
 };

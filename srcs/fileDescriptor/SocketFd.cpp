@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/19 17:51:39 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 20:04:47 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,11 +31,15 @@
 *****************/
 
 SocketFd::SocketFd(void) 
-: AFileDescriptor(), _serverInfo(NULL), _responseReady(false)
+: AFileDescriptor(), _responseReady(false)
 {}
 
 SocketFd::SocketFd(SocketFd const & copy)
-	:	AFileDescriptor(copy), _serverInfo(copy._serverInfo),
+	:	AFileDescriptor(copy),
+		_rawData(copy._rawData),
+		_serverInfo(copy._serverInfo),
+		_serverInfoCurr(copy._serverInfoCurr),
+		_request(copy._request),
 		_responseReady(copy._responseReady)
 {}
 
@@ -43,9 +47,11 @@ SocketFd & SocketFd::operator=(SocketFd const & rhs)
 {
 	if (this != &rhs)
 	{
-		this->_fd = rhs._fd;
-		this->_rawData = rhs._rawData;
-		this->_responseReady = rhs._responseReady;
+		_fd = rhs._fd;
+		_rawData = rhs._rawData;
+		_serverInfoCurr = rhs._serverInfoCurr;
+		_request = rhs._request;
+		_responseReady = rhs._responseReady;
 	}
 
 	return (*this);
@@ -59,8 +65,8 @@ SocketFd::~SocketFd()
 /**************
 * CONSTRUCTORS
 ***************/
-SocketFd::SocketFd(int fd, std::vector<Server> const * serverInfo)
-	:	AFileDescriptor(fd), _serverInfo(serverInfo)
+SocketFd::SocketFd(int epollFd, int fd, std::vector<ServerConf> const & serverInfo)
+	:	AFileDescriptor(epollFd, fd), _serverInfo(serverInfo)
 {}
 /******************************************************************************/
 
@@ -73,9 +79,9 @@ Request const &	SocketFd::getRequest() const
 	return (this->_request);
 }
 
-Server const &	SocketFd::getServerInfo() const
+ServerConf const &	SocketFd::getServerInfo() const
 {
-	return (*this->_serverInfo);
+	return (this->_serverInfoCurr);
 }
 /******************************************************************************/
 
@@ -114,6 +120,7 @@ void		SocketFd::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
 	if (_request.hasMessageBody() && _request.handleMessageBody(_rawData) == false)
 		return ;
 	_rawData.erase(_rawData.begin(), _rawData.end());
+	_serverInfoCurr = _serverInfo[0]; // TODO: Find the good server info
 	WebServ::updateEpoll(_epollFd, _fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 

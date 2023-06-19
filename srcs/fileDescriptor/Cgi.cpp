@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/16 16:40:26 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/19 19:58:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,7 +171,7 @@ void	Cgi::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
 
 char **    Cgi::mapCgiParams()
 {
-    Server const &  serverInfo = _socketInfo->getServerInfo();
+    ServerConf const &  serverInfo = _socketInfo->getServerInfo();
     Request const & request = _socketInfo->getRequest();
     std::map<std::string, std::string> const & headers = request.getHeaders();
     char * cwd = get_current_dir_name();
