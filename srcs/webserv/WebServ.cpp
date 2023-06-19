@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/14 17:38:01 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/16 16:05:44 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,26 +101,19 @@ void    WebServ::start()
         // How handle if nfds < 0
 		nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, -1);
 
+
+
 		for (int i = 0; i < nfds; i++)
 		{
 			int					fd = events[i].data.fd;
 			uint32_t			event = events[i].events;
 			AFileDescriptor *	aFd = _mapFd[fd];
-
 			if (event & EPOLLIN)
 				aFd->doOnRead(_mapFd);
 			if (event & EPOLLOUT)
 				aFd->doOnWrite(_mapFd);
 			if (!(event & EPOLLIN) && !(event & EPOLLOUT))
 				aFd->doOnError(_mapFd, event);
-				// {
-				// 	std::cout << event << std::endl;
-				// 	doOnRead(fd);
-				// 	// TODO: Handle event error
-				// 	// std::cout << "default => event = " << event;
-				// 	// _mapFd.erase(fd); // REMOVE TEST
-				// 	// close(fd); // REMOVE TEST
-				// }
 		}
 	}
 }
