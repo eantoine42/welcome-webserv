@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Syntax.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/30 21:54:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/30 21:54:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/20 02:06:06 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -191,6 +191,7 @@ class Syntax {
 		static void 					fill_response_status_map(std::map<status_code_t, std::string> &map);
 		static void 					fillMimeTypeMap(std::map<std::string, std::string> &mime_types_map);
 		static std::string				getFormattedDate(std::time_t time);
+		static long	long				getTimeOfDayMs();
 
 
 	private:

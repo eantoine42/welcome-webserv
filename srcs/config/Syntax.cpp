@@ -6,6 +6,7 @@
 #include <sstream> // stringstream
 #include <algorithm> // replace if
 #include <stack>
+#include <sys/time.h>
 
 /**
  * @brief trim line from # until the end
@@ -612,4 +613,10 @@ std::string	Syntax::getFormattedDate(std::time_t time)
 		throw (FatalError("Webserv error: strftime() function failed"));
 	}
 	return(std::string(date));	
+}
+
+long long	Syntax::getTimeOfDayMs(){
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return static_cast<long long>(tv.tv_sec) *1000LL + static_cast<long long> (tv.tv_usec)/1000LL;
 }

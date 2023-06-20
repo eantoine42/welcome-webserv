@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServ.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/24 19:09:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/26 01:07:33 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include "Cgi.hpp"
 
 #define MAX_EVENTS 1024
+#define TIMEOUT	1000
 
 class WebServ
 {
