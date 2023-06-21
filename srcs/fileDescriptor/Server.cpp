@@ -6,13 +6,13 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/19 19:34:08 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 22:08:20 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "Exception.hpp"
-#include "SocketFd.hpp"
+#include "Client.hpp"
 #include "WebServ.hpp"
 
 #include <unistd.h>		// close
@@ -73,7 +73,7 @@ void	Server::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
 		throw e;
 	}
 
-	mapFd[cs] = new SocketFd(_epollFd, cs, _serverConfs);
+	mapFd[cs] = new Client(_epollFd, cs, _serverConfs);
 }
 
 void	Server::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
@@ -84,5 +84,5 @@ void	Server::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
 void	Server::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
 {
 	(void) mapFd;
-	std::cout << "SocketFd on error, event = " << event << std::endl;
+	std::cout << "Client on error, event = " << event << std::endl;
 }

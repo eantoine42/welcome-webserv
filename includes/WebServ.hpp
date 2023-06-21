@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 17:35:19 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 22:06:56 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,8 +24,9 @@ class WebServ
 {
     private:
 
-        int                                 _epollFd;
-        std::map<int, AFileDescriptor *>    _mapFd;
+        int                                     _epollFd;
+        std::map<int, AFileDescriptor *>        _mapFd;
+        std::vector<std::pair<int, long long> > _times;
 
     public:
 
@@ -41,8 +42,6 @@ class WebServ
 
 
         static void	updateEpoll(int epoll, int fd, u_int32_t event, int mod);
-
-        static std::vector<std::pair<int, time_t>> TIMES;        
 };
 
 #endif

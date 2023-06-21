@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/19 19:58:30 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 22:09:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,7 @@ Cgi::~Cgi()
 /**************
 * CONSTRUCTORS
 ***************/
-Cgi::Cgi(SocketFd & socketFd) : AFileDescriptor(), _socketInfo(&socketFd)
+Cgi::Cgi(Client & socketFd) : AFileDescriptor(), _socketInfo(&socketFd)
 {}
 /******************************************************************************/
 
@@ -160,7 +160,7 @@ void    Cgi::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
 /// @param event 
 void	Cgi::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
 {
-	std::cout << "SocketFd on error, event = " << event << std::endl;
+	std::cout << "Client on error, event = " << event << std::endl;
     this->doOnRead(mapFd);
 }
 /******************************************************************************/

@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   SocketFd.hpp                                       :+:      :+:    :+:   */
+/*   Client.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SOCKET_FD
-#define SOCKET_FD
+#ifndef CLIENT_HPP
+#define CLIENT_HPP
 
 #include "AFileDescriptor.hpp"
 #include "Request.hpp"
@@ -19,7 +19,7 @@
 
 #define BUFFER_SIZE		1024
 
-class SocketFd : public AFileDescriptor
+class Client : public AFileDescriptor
 {
 	private:
 		std::vector<unsigned char>		_rawData;
@@ -28,19 +28,19 @@ class SocketFd : public AFileDescriptor
 		Request							_request;
 		bool							_responseReady;
 
-		SocketFd(void);
+		Client(void);
 
 		bool	searchRequestLine();
 		bool	searchHeaders();
 
 	public:
 		
-		SocketFd(SocketFd const & copy);
-		SocketFd & operator=(SocketFd const & rhs);
-		virtual ~SocketFd();
+		Client(Client const & copy);
+		Client & operator=(Client const & rhs);
+		virtual ~Client();
 
 		// Constructors
-		SocketFd(int epollFd, int fd, std::vector<ServerConf> const & serverInfo);
+		Client(int epollFd, int fd, std::vector<ServerConf> const & serverInfo);
 
 		// Geters
 		Request const & getRequest() const;

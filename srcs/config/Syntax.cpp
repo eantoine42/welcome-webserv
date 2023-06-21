@@ -1,7 +1,7 @@
 
 #include "Syntax.hpp"
 #include "Exception.hpp"
-#include "utils.hpp"
+#include "Utils.hpp"
 
 #include <sstream> // stringstream
 #include <algorithm> // replace if
@@ -179,11 +179,11 @@ void			Syntax::testPath(const std::string &path)
 	ext_pos = path.find(".conf");
 	if (ext_pos == std::string::npos || ext_pos != path.size() - 5)
 		throw (BadExtensionConfFile());
-	if (!fileExists(path.c_str()))
+	if (!Utils::fileExists(path.c_str()))
 		throw (FileDoesNotExist());
-	if (!fileRead(path.c_str()))
+	if (!Utils::fileRead(path.c_str()))
 		throw (FileNotReadable());
-	if (isDirectory(path.c_str()))
+	if (Utils::isDirectory(path.c_str()))
 		throw (PathIsDir());
 	file.open(path.c_str(), std::ios_base::in);
 	if (!file) {

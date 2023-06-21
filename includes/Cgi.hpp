@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:39:09 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/14 17:34:57 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 22:09:03 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,14 @@
 #define CGI_HPP
 
 #include "AFileDescriptor.hpp"
-#include "SocketFd.hpp"
+#include "Client.hpp"
 
 class Cgi : public AFileDescriptor
 {
     private:
 
         std::vector<unsigned char>	_rawData;
-        SocketFd *  _socketInfo;
+        Client *  _socketInfo;
         int         _fdRead;
         int         _fdWrite;
 
@@ -36,7 +36,7 @@ class Cgi : public AFileDescriptor
 		Cgi & operator=(Cgi const & rhs);
 		virtual ~Cgi();
 
-        Cgi(SocketFd & SocketFd);
+        Cgi(Client & Client);
 
         int     getReadFd() const;
 

@@ -6,13 +6,13 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 17:31:37 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 22:13:26 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServ.hpp"
 #include "Exception.hpp"
-#include "SocketFd.hpp"
+#include "Client.hpp"
 #include "Cgi.hpp"
 #include <cstring> // strerror, bzero
 #include <errno.h> // errno

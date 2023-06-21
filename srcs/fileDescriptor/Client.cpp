@@ -1,16 +1,16 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   SocketFd.cpp                                       :+:      :+:    :+:   */
+/*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 17:22:25 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 17:54:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "SocketFd.hpp"
+#include "Client.hpp"
 #include "Debugger.hpp"
 #include "Response.hpp"
 #include "Exception.hpp"
@@ -30,11 +30,11 @@
 * CANNONICAL FORM
 *****************/
 
-SocketFd::SocketFd(void) 
+Client::Client(void) 
 : AFileDescriptor(), _responseReady(false)
 {}
 
-SocketFd::SocketFd(SocketFd const & copy)
+Client::Client(Client const & copy)
 	:	AFileDescriptor(copy),
 		_rawData(copy._rawData),
 		_serverInfo(copy._serverInfo),
@@ -43,7 +43,7 @@ SocketFd::SocketFd(SocketFd const & copy)
 		_responseReady(copy._responseReady)
 {}
 
-SocketFd & SocketFd::operator=(SocketFd const & rhs)
+Client & Client::operator=(Client const & rhs)
 {
 	if (this != &rhs)
 	{
@@ -58,14 +58,14 @@ SocketFd & SocketFd::operator=(SocketFd const & rhs)
 
 }
 
-SocketFd::~SocketFd()
+Client::~Client()
 {}
 /******************************************************************************/
 
 /**************
 * CONSTRUCTORS
 ***************/
-SocketFd::SocketFd(int epollFd, int fd, std::vector<ServerConf> const & serverInfo)
+Client::Client(int epollFd, int fd, std::vector<ServerConf> const & serverInfo)
 	:	AFileDescriptor(epollFd, fd), _serverInfo(serverInfo)
 {}
 /******************************************************************************/
@@ -74,12 +74,12 @@ SocketFd::SocketFd(int epollFd, int fd, std::vector<ServerConf> const & serverIn
 * ACCESSORS
 ************/
 
-Request const &	SocketFd::getRequest() const
+Request const &	Client::getRequest() const
 {
 	return (this->_request);
 }
 
-ServerConf const &	SocketFd::getServerInfo() const
+ServerConf const &	Client::getServerInfo() const
 {
 	return (this->_serverInfoCurr);
 }
@@ -91,7 +91,7 @@ ServerConf const &	SocketFd::getServerInfo() const
 
 /// @brief 
 /// @return 
-void		SocketFd::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
+void		Client::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
 {
 	char	buffer[BUFFER_SIZE];
 	ssize_t	n;
@@ -125,7 +125,7 @@ void		SocketFd::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
 }
 
 /// @brief 
-void	SocketFd::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
+void	Client::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
 {
 	Cgi * cgi = NULL;
 
@@ -165,14 +165,14 @@ void	SocketFd::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
 /// @brief 
 /// @param mapFd 
 /// @param event 
-void	SocketFd::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
+void	Client::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
 {
-	std::cout << "SocketFd on error, event = " << event << std::endl;
+	std::cout << "Client on error, event = " << event << std::endl;
 	close(_fd);
 	mapFd.erase(_fd);
 }
 
-void	SocketFd::responseCgi(std::string const & response)
+void	Client::responseCgi(std::string const & response)
 {
 	_responseReady = true;
 	_rawData.assign(response.begin(), response.end());
@@ -185,7 +185,7 @@ void	SocketFd::responseCgi(std::string const & response)
 * PRIVATE METHODS
 *****************/
 
-bool	SocketFd::searchRequestLine()
+bool	Client::searchRequestLine()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n'};
@@ -199,7 +199,7 @@ bool	SocketFd::searchRequestLine()
 	return true;
 }
 
-bool	SocketFd::searchHeaders()
+bool	Client::searchHeaders()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};

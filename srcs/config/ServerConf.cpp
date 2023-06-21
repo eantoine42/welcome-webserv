@@ -6,13 +6,13 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/19 20:24:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 22:09:52 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConf.hpp"
 #include "Syntax.hpp"
-#include "SocketFd.hpp"
+#include "Client.hpp"
 #include "Exception.hpp"
 #include "Debugger.hpp"
 #include "WebServ.hpp"

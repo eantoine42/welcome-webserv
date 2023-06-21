@@ -2,7 +2,7 @@
 #include "Location.hpp"
 #include "Syntax.hpp"
 #include "Exception.hpp"
-#include "utils.hpp"
+#include "Utils.hpp"
 
 #include <cstdlib> // atoi
 

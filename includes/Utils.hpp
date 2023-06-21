@@ -4,6 +4,24 @@
 #include <vector>
 #include <iostream>
 
+class Utils
+{
+    private:
+
+        Utils();
+		Utils(const Utils &copy);
+		Utils &operator=(const Utils &copy);
+		~Utils();
+
+    public:
+
+        static bool fileExists(const char* path);
+        static bool fileRead(const char* path);
+        static bool isDirectory(const char* path);
+        static long long    getTimeOfDayMs();
+
+};
+
 template < class T >
 inline std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 {
@@ -15,9 +33,5 @@ inline std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
     }
     return os;
 }
-
-bool fileExists(const char* path);
-bool fileRead(const char* path);
-bool isDirectory(const char* path);
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/14 19:26:37 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 22:13:59 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,9 +23,9 @@ void    Response::badRequest(std::vector<unsigned char> & rawData)
     rawData.assign(response.begin(), response.end());
 }
 
-void    Response::createResponse(std::vector<unsigned char> & rawData, SocketFd const & SocketFd)
+void    Response::createResponse(std::vector<unsigned char> & rawData, Client const & Client)
 {
-    std::string filename = SocketFd.getServerInfo().getRoot() + "/" + SocketFd.getRequest().getFileName();
+    std::string filename = Client.getServerInfo().getRoot() + "/" + Client.getRequest().getFileName();
     std::string response;
     std::stringstream ss;
     std::ifstream is (filename.c_str(), std::ifstream::binary);
