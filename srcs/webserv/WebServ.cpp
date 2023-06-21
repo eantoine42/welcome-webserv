@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/19 19:29:56 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/21 17:31:37 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,6 @@ void    WebServ::epollInit()
 {
     std::map<int, AFileDescriptor *>::const_iterator   	it;
     struct epoll_event                      			event;
-
 
     if ((_epollFd = epoll_create(1)) < 0)
         throw EpollInitError(strerror(errno));

@@ -40,8 +40,22 @@ Location::Location(const Location &src)
 
 Location &Location::operator=(const Location &src)
 {
-	Location	tmp(src);
-	std::swap(tmp, *this);
+	if (this != &src)
+	{
+		_port = src._port;
+		_loc_index = src._loc_index;	
+		_root = src._root;
+		_allow_method = src._allow_method;
+		_index = src._index;
+		_cgi = src._cgi;
+		_autoindex = src._autoindex;
+		_upload_dir = src._upload_dir;
+		_return = src._return;
+		_client_body_size = src._client_body_size;
+		_error_pages = src._error_pages;
+		_uri = src._uri;
+	}
+
 	return (*this);
 }
 
