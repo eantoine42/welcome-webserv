@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 22:13:26 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/24 20:05:13 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,13 +62,27 @@ WebServ::~WebServ()
 
 /// @brief Add a pair to map servers
 /// @param server <file descriptor, Server object>
-void    WebServ::addServer(int socketFd, Server const & server)
+void    WebServ::addServer(Server const & server)
 {
 	Server * serv = new Server(server);
-	serv->setFd(socketFd);
-    _mapFd[socketFd] = serv;
+    _mapFd[serv->getFd()] = serv;
 }
 
+/// @brief 
+/// @param client 
+void	WebServ::addClient(Client const & client)
+{
+	Client * cli = new Client(client);
+    _mapFd[cli->getFd()] = cli;
+}
+
+/// @brief 
+/// @param cgi 
+void    WebServ::addCgi(Cgi const & cgi)
+{
+	Cgi * cgiTmp = new Cgi(cgi);
+    _mapFd[cgiTmp->getFd()] = cgiTmp;
+}
 
 /// @brief Init an epoll and add listening socket
 /// @throw EpollInitError
@@ -84,7 +98,6 @@ void    WebServ::epollInit()
     event.events = EPOLLIN;
     for (it = _mapFd.begin(); it != _mapFd.end(); it++)
     {
-		it->second->setEpollFd(_epollFd);
         event.data.fd = it->first;
         if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, it->first, &event) < 0)
             throw EpollInitError(strerror(errno));
@@ -110,11 +123,40 @@ void    WebServ::start()
 			AFileDescriptor *	aFd = _mapFd[fd];
 			
 			if (event & EPOLLIN)
-				aFd->doOnRead(_mapFd);
+				aFd->doOnRead(*this);
 			if (event & EPOLLOUT)
-				aFd->doOnWrite(_mapFd);
+				aFd->doOnWrite(*this);
 			if (!(event & EPOLLIN) && !(event & EPOLLOUT))
-				aFd->doOnError(_mapFd, event);
+				aFd->doOnError(*this, event);
+		}
+	}
+}
+
+void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
+{
+	struct epoll_event ev;
+
+	bzero(&ev, sizeof(ev));
+	ev.events = event;
+	ev.data.fd = fd;
+	if (epoll_ctl(_epollFd, mod, fd, &ev) < 0)
+		throw EpollInitError(strerror(errno));
+}
+
+void	WebServ::removeFd(int fd)
+{
+	if (_mapFd.find(fd) == _mapFd.end())
+		return ;
+	delete _mapFd[fd];
+	_mapFd.erase(fd);
+	
+	std::vector<std::pair<int, long long> >::iterator it = _times.begin();
+	for (; it != _times.end(); it++)
+	{
+		if (it->first == fd)
+		{
+			_times.erase(it);
+			break;
 		}
 	}
 }
@@ -130,17 +172,6 @@ void    WebServ::start()
 /***********************
 * PUBLIC STATIC METHODS
 ***********************/
-void	WebServ::updateEpoll(int epoll, int fd, u_int32_t event, int mod)
-{
-	struct epoll_event ev;
-
-	bzero(&ev, sizeof(ev));
-	ev.events = event;
-	ev.data.fd = fd;
-	if (epoll_ctl(epoll, mod, fd, &ev) < 0)
-		throw EpollInitError(strerror(errno));
-}
-
 
 //void	WebServ::popFd(int fd)
 //{

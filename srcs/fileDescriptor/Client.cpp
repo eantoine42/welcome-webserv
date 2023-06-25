@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 17:54:30 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/25 22:18:48 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,29 +21,31 @@
 #include <sys/epoll.h>
 #include <iostream>
 #include <unistd.h> // read
-#include <cstdio> // perror
+#include <cstdio>	// perror
 #include <fstream>
 #include <sys/socket.h> // recv
-#include <algorithm> // search
+#include <algorithm>	// search
 
 /*****************
-* CANNONICAL FORM
-*****************/
+ * CANNONICAL FORM
+ *****************/
 
-Client::Client(void) 
-: AFileDescriptor(), _responseReady(false)
-{}
+Client::Client(void)
+	: AFileDescriptor(), _responseReady(false)
+{
+}
 
-Client::Client(Client const & copy)
-	:	AFileDescriptor(copy),
-		_rawData(copy._rawData),
-		_serverInfo(copy._serverInfo),
-		_serverInfoCurr(copy._serverInfoCurr),
-		_request(copy._request),
-		_responseReady(copy._responseReady)
-{}
+Client::Client(Client const &copy)
+	: AFileDescriptor(copy),
+	  _rawData(copy._rawData),
+	  _serverInfo(copy._serverInfo),
+	  _serverInfoCurr(copy._serverInfoCurr),
+	  _request(copy._request),
+	  _responseReady(copy._responseReady)
+{
+}
 
-Client & Client::operator=(Client const & rhs)
+Client &Client::operator=(Client const &rhs)
 {
 	if (this != &rhs)
 	{
@@ -55,137 +57,129 @@ Client & Client::operator=(Client const & rhs)
 	}
 
 	return (*this);
-
 }
 
 Client::~Client()
-{}
+{
+}
 /******************************************************************************/
 
 /**************
-* CONSTRUCTORS
-***************/
-Client::Client(int epollFd, int fd, std::vector<ServerConf> const & serverInfo)
-	:	AFileDescriptor(epollFd, fd), _serverInfo(serverInfo)
-{}
+ * CONSTRUCTORS
+ ***************/
+Client::Client(int fd, std::vector<ServerConf> const &serverInfo)
+	: AFileDescriptor(fd), _serverInfo(serverInfo)
+{
+}
 /******************************************************************************/
 
 /***********
-* ACCESSORS
-************/
+ * ACCESSORS
+ ************/
 
-Request const &	Client::getRequest() const
+Request const &Client::getRequest() const
 {
 	return (this->_request);
 }
 
-ServerConf const &	Client::getServerInfo() const
+ServerConf const &Client::getServerInfo() const
 {
 	return (this->_serverInfoCurr);
 }
 /******************************************************************************/
 
 /****************
-* PUBLIC METHODS
-****************/
+ * PUBLIC METHODS
+ ****************/
 
-/// @brief 
-/// @return 
-void		Client::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
+/// @brief
+/// @return
+void Client::doOnRead(WebServ &webServ)
 {
-	char	buffer[BUFFER_SIZE];
-	ssize_t	n;
+	char buffer[BUFFER_SIZE];
+	ssize_t n;
 	std::vector<unsigned char>::iterator it;
 
 	if ((n = recv(_fd, buffer, BUFFER_SIZE, 0)) > 0)
 		_rawData.assign(buffer, buffer + n);
-	
+
 	// Try to read next time fd is NON_BLOCK and we must not check errno
 	if (n < 0)
-		return ;
+		return;
 	// Socket connection close, a EOF was present
 	if (n == 0)
 	{
 		close(_fd);
-		mapFd.erase(_fd);
-		return ;
+		webServ.removeFd(_fd);
+		return;
 	}
-	// Try to retrieve request line
 	if (_request.getHttpMethod().empty() && searchRequestLine() == false)
-		return ;
-	// Try to retrieve headers
+		return;
 	if (_request.getHeaders().empty() && searchHeaders() == false)
-		return ;
-	// Try to retrieve message body if necessary
+		return;
 	if (_request.hasMessageBody() && _request.handleMessageBody(_rawData) == false)
-		return ;
+		return;
 	_rawData.erase(_rawData.begin(), _rawData.end());
 	_serverInfoCurr = _serverInfo[0]; // TODO: Find the good server info
-	WebServ::updateEpoll(_epollFd, _fd, EPOLLOUT, EPOLL_CTL_MOD);
+	webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 
-/// @brief 
-void	Client::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
+/// @brief
+void Client::doOnWrite(WebServ &webServ)
 {
-	Cgi * cgi = NULL;
-
 	if (_responseReady == true)
 	{
 		send(_fd, &(_rawData[0]), _rawData.size(), 0);
-		WebServ::updateEpoll(_epollFd, _fd, EPOLLIN, EPOLL_CTL_MOD);
+		webServ.updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
 		_responseReady = false;
 		_request = Request();
-		return ;
+		return;
 	}
-	
+
 	if (_request.getExtension().compare("php") == 0)
 	{
-		cgi = new Cgi(*this);
-		cgi->setEpollFd(_epollFd);
-		if (cgi->run() < 0)
+		Cgi cgi = Cgi(*this);
+		if (cgi.run() < 0)
 		{
-			delete cgi;
 			Response::createResponse(_rawData, *this);
 			_responseReady = true;
-			WebServ::updateEpoll(_epollFd, _fd, EPOLLOUT, EPOLL_CTL_MOD);
-			return ;
+			webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+			return;
 		}
-		mapFd[cgi->getReadFd()] = cgi;
-		WebServ::updateEpoll(_epollFd, _fd, 0, EPOLL_CTL_MOD);
-		WebServ::updateEpoll(_epollFd, cgi->getReadFd(), EPOLLIN, EPOLL_CTL_ADD);
+		webServ.addCgi(cgi);
+		webServ.updateEpoll(_fd, 0, EPOLL_CTL_MOD);
+		webServ.updateEpoll(cgi.getReadFd(), EPOLLIN, EPOLL_CTL_ADD);
 	}
 	else
 	{
 		Response::createResponse(_rawData, *this);
 		_responseReady = true;
-		WebServ::updateEpoll(_epollFd, _fd, EPOLLOUT, EPOLL_CTL_MOD);
+		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 }
 
-/// @brief 
-/// @param mapFd 
-/// @param event 
-void	Client::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
+/// @brief
+/// @param mapFd
+/// @param event
+void Client::doOnError(WebServ &webServ, uint32_t event)
 {
 	std::cout << "Client on error, event = " << event << std::endl;
-	close(_fd);
-	mapFd.erase(_fd);
+	webServ.removeFd(_fd);
 }
 
-void	Client::responseCgi(std::string const & response)
+void Client::responseCgi(std::string const &response)
 {
 	_responseReady = true;
 	_rawData.assign(response.begin(), response.end());
 }
 
-
 /******************************************************************************/
 
 /*****************
-* PRIVATE METHODS
-*****************/
+ * PRIVATE METHODS
+ *****************/
 
-bool	Client::searchRequestLine()
+bool Client::searchRequestLine()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n'};
@@ -199,7 +193,7 @@ bool	Client::searchRequestLine()
 	return true;
 }
 
-bool	Client::searchHeaders()
+bool Client::searchHeaders()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};

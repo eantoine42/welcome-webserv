@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 22:08:20 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/24 19:26:53 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,6 @@ Server &	Server::operator=(Server const &src)
 	if (this != &src)
 	{
 		_fd = src._fd;
-		_epollFd = src._epollFd;
 		_serverConfs = src._serverConfs;
 	}
 	return *this;
@@ -45,12 +44,12 @@ Server &	Server::operator=(Server const &src)
 Server::~Server()
 {}
 
-Server::Server(std::vector<ServerConf> const & serverConfs)
-	: 	AFileDescriptor(),
+Server::Server(int fd, std::vector<ServerConf> const & serverConfs)
+	: 	AFileDescriptor(fd),
 		_serverConfs(serverConfs)
 {}
 
-void	Server::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
+void	Server::doOnRead(WebServ & webServ)
 {
     int		cs;
 
@@ -65,7 +64,7 @@ void	Server::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
 
 	try
 	{
-		WebServ::updateEpoll(_epollFd, cs, EPOLLIN, EPOLL_CTL_ADD);
+		webServ.updateEpoll(cs, EPOLLIN, EPOLL_CTL_ADD);
 	} 
 	catch (EpollInitError & e)
 	{
@@ -73,16 +72,16 @@ void	Server::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
 		throw e;
 	}
 
-	mapFd[cs] = new Client(_epollFd, cs, _serverConfs);
+	webServ.addClient(Client(cs, _serverConfs));
 }
 
-void	Server::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
+void	Server::doOnWrite(WebServ & webServ)
 {
-	(void) mapFd;
+	(void) webServ;
 }
 
-void	Server::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
+void	Server::doOnError(WebServ & webServ, uint32_t event)
 {
-	(void) mapFd;
+	(void) webServ;
 	std::cout << "Client on error, event = " << event << std::endl;
 }

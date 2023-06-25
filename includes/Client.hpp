@@ -40,16 +40,16 @@ class Client : public AFileDescriptor
 		virtual ~Client();
 
 		// Constructors
-		Client(int epollFd, int fd, std::vector<ServerConf> const & serverInfo);
+		Client(int fd, std::vector<ServerConf> const & serverInfo);
 
 		// Geters
 		Request const & getRequest() const;
 		ServerConf const &	getServerInfo() const;
 
 		// Public methods
-		virtual void doOnRead(std::map<int, AFileDescriptor *> & mapFd);
-		virtual void doOnWrite(std::map<int, AFileDescriptor *> & mapFd);
-		virtual void doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event);
+		virtual void doOnRead(WebServ & webserv);
+		virtual void doOnWrite(WebServ & webServ);
+		virtual void doOnError(WebServ & webServ, uint32_t event);
 
 		void	responseCgi(std::string const & response);
 };

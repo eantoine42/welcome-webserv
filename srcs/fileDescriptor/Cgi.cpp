@@ -6,13 +6,14 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 22:09:30 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/25 22:31:40 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Cgi.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "Debugger.hpp"
 #include "WebServ.hpp"
 
 #include <algorithm> // replace
@@ -20,7 +21,6 @@
 #include <unistd.h> // pipe, read
 #include <errno.h>
 #include <sys/fcntl.h>
-#include "Debugger.hpp"
 
 /*****************
 * CANNONICAL FORM
@@ -30,15 +30,22 @@ Cgi::Cgi(void) : AFileDescriptor(), _socketInfo(NULL)
 {}
 
 Cgi::Cgi(Cgi const & copy)
-	:	AFileDescriptor(copy), _socketInfo(copy._socketInfo)
+	:	AFileDescriptor(copy),
+        _rawData(copy._rawData),
+        _socketInfo(copy._socketInfo),
+        _fdRead(copy._fdRead),
+        _fdWrite(copy._fdWrite)
 {}
 
 Cgi & Cgi::operator=(Cgi const & rhs)
 {
 	if (this != &rhs)
 	{
-		this->_fd = rhs._fd;
-		this->_socketInfo = rhs._socketInfo;
+		_fd = rhs._fd;
+        _rawData = rhs._rawData;
+		_socketInfo = rhs._socketInfo;
+        _fdRead = rhs._fdRead;
+        _fdWrite = rhs._fdWrite;
 	}
 
 	return (*this);
@@ -122,13 +129,13 @@ int     Cgi::run()
 		std::cerr << "Fcntl error" << std::endl;
 		return -1;
 	}
-
+    _fd = _fdRead;
     return (0);
 }
 
 /// @brief 
 /// @param epoll 
-void    Cgi::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
+void    Cgi::doOnRead(WebServ & webServ)
 {
     unsigned char buffer[BUFFER_SIZE];
     ssize_t n;
@@ -144,24 +151,24 @@ void    Cgi::doOnRead(std::map<int, AFileDescriptor *> & mapFd)
         str = Response::cgiSimpleResponse(str);
         _socketInfo->responseCgi(str);
         close(_fdRead);
-        mapFd.erase(_fdRead);
-        WebServ::updateEpoll(_epollFd, _socketInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
+        webServ.removeFd(_fdRead);
+        webServ.updateEpoll(_socketInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
     }
 }
 
 /// @brief 
-void    Cgi::doOnWrite(std::map<int, AFileDescriptor *> & mapFd)
+void    Cgi::doOnWrite(WebServ & webServ)
 {
-    (void) mapFd;
+    (void) webServ;
 }
 
 /// @brief 
 /// @param mapFd 
 /// @param event 
-void	Cgi::doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event)
+void	Cgi::doOnError(WebServ & webServ, uint32_t event)
 {
 	std::cout << "Client on error, event = " << event << std::endl;
-    this->doOnRead(mapFd);
+    this->doOnRead(webServ);
 }
 /******************************************************************************/
 

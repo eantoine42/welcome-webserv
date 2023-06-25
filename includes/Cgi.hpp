@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:39:09 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 22:09:03 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/24 19:18:42 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ class Cgi : public AFileDescriptor
     private:
 
         std::vector<unsigned char>	_rawData;
-        Client *  _socketInfo;
+        Client *    _socketInfo;
         int         _fdRead;
         int         _fdWrite;
 
@@ -40,9 +40,9 @@ class Cgi : public AFileDescriptor
 
         int     getReadFd() const;
 
-       	virtual void doOnRead(std::map<int, AFileDescriptor *> & mapFd);
-		virtual void doOnWrite(std::map<int, AFileDescriptor *> & mapFd);
-		virtual void doOnError(std::map<int, AFileDescriptor *> & mapFd, uint32_t event);
+       	virtual void doOnRead(WebServ & webServ);
+		virtual void doOnWrite(WebServ & webServ);
+		virtual void doOnError(WebServ & webServ, uint32_t event);
 
         int     run();
 

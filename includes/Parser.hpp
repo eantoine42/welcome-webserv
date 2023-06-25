@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:40:20 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/19 19:32:56 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/24 18:18:05 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,8 +21,8 @@ class Parser
 {
     private:
 
-        std::string const                                               _configFile;
-        std::map< std::pair<std::string, int>, std::vector<ServerConf> > _map;
+        std::string const                                                _configFile;
+        std::map< std::pair<std::string, int>, std::vector<ServerConf> > _map; // pair<host, port>
 
         std::string     getStringConf() const;
         void            parseServers(std::vector<ServerConf> & servers, std::string strConfig);
