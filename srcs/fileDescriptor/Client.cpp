@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/27 12:41:51 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/27 12:54:09 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -215,7 +215,7 @@ void	Client::errorResponse(status_code_t status)
 	//TODO: Find error file 
 	std::string extension = "html";
 
-	std::string error = "<html>\n<head><title>" + Syntax::intToString(status) + Syntax::responseStatus.at(status) + "</title></head>\n<body>\n<center><h1>" + Syntax::intToString(status) + Syntax::responseStatus.at(status) + "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
+	std::string error = "<html>\n<head><title>" + Syntax::intToString(status) + " " +Syntax::responseStatus.at(status) + "</title></head>\n<body>\n<center><h1>" + Syntax::intToString(status) + Syntax::responseStatus.at(status) + "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
 	std::vector<unsigned char> body = std::vector<unsigned char>(error.begin(), error.end());
 
 	resp_t resp = {status, body, extension, _rawData, false};
@@ -225,7 +225,9 @@ void	Client::errorResponse(status_code_t status)
 
 void	Client::getResponse()
 {
-	//TODO: Find error file 
+	//TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND)
+
+
 	std::vector<unsigned char> body;
     std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getFileName();
     std::ifstream is (filename.c_str(), std::ifstream::binary);
