@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/27 10:55:01 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/27 12:41:51 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,7 +123,7 @@ void Client::doOnRead(WebServ &webServ)
 	if (_request.hasMessageBody() && _request.handleMessageBody(_rawData) == false)
 		return;
 	_rawData.erase(_rawData.begin(), _rawData.end());
-	_serverInfoCurr = _serverInfo[0]; // TODO: Find the good server info
+	_serverInfoCurr = getCorrectServer(); 
 	webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 
@@ -249,4 +249,24 @@ void	Client::getResponse()
 	{
 		errorResponse(NOT_FOUND);
 	}
+}
+
+ServerConf Client::getCorrectServer()
+{
+	std::vector<ServerConf>::iterator it = _serverInfo.begin();
+	for (; it !=_serverInfo.end(); it++)
+	{
+		if (_request.getHeaders().find("Host")->second == it->getName())
+			return (*it);
+	}
+	it = _serverInfo.begin();
+	for (; it !=_serverInfo.end(); it++)
+	{
+		std::vector<Location>::const_iterator it1 = it->getLocation().begin();
+		for (; it1 != it->getLocation().end(); it1++)
+			if (_request.getPathRequest() == it1->getRoot())
+				return (*it);
+	}
+	return (*(_serverInfo.begin()));
+
 }

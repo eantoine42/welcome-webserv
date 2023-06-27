@@ -34,8 +34,9 @@ class Client : public AFileDescriptor
 
 		Client(void);
 
-		bool	searchRequestLine();
-		bool	searchHeaders();
+		bool		searchRequestLine();
+		bool		searchHeaders();
+		ServerConf	getCorrectServer();
 
 	public:
 		
