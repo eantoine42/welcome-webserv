@@ -6,27 +6,40 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:08 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 22:08:45 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/26 18:32:50 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#include "Client.hpp"
+#include "Syntax.hpp"
+
+struct resp_t
+{
+    status_code_t                   status;
+    std::vector<unsigned char>      body;
+    std::string                     extension;
+    std::vector<unsigned char> &    rawData;
+    bool                            keepAlive;
+};
 
 class Response
 {
     private:
 
-        static std::string commonResponse(const char * body, std::string size);
+        static std::string  commonResponse(status_code_t status);
+        static std::string  bodyHeaders(std::vector<unsigned char> body, std::string extension);
 
     public:
 
         static void badRequest(std::vector<unsigned char> & rawData);
-        static void createResponse(std::vector<unsigned char> & rawData, Client const & Client);
+        static void createResponse(resp_t resp);
         static std::string cgiSimpleResponse(std::string & body);
 
 };
+
+
+
 
 #endif

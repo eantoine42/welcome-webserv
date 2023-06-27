@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/24 19:09:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/26 11:15:24 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,8 @@
 #include "AFileDescriptor.hpp"
 #include "Cgi.hpp"
 
-#define MAX_EVENTS 1024
+#define MAX_EVENTS  1024
+#define TIMEOUT     10000
 
 class WebServ
 {
@@ -27,7 +28,9 @@ class WebServ
 
         int                                     _epollFd;
         std::map<int, AFileDescriptor *>        _mapFd;
-        std::vector<std::pair<int, long long> > _times;
+        std::vector<std::pair<int, long long> > _clientTimes;
+
+        void    handleTimeout();
 
     public:
 
@@ -37,14 +40,12 @@ class WebServ
 		WebServ & operator=(WebServ const & rhs);
 		~WebServ();
 
-        void    addServer(Server const & server);
-        void    addClient(Client const & client);
-        void    addCgi(Cgi const & cgi);
+        void    addFd(AFileDescriptor * server);
+        void    addClientTimes(std::pair<int, long long> clientInfo);
         void    removeFd(int fd);
         void    epollInit();
-        void    start();
-
         void	updateEpoll(int fd, u_int32_t event, int mod);
+        void    start();
 };
 
 #endif

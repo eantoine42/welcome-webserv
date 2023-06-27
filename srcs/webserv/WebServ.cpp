@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/24 20:05:13 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/26 14:36:37 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 #include "Exception.hpp"
 #include "Client.hpp"
 #include "Cgi.hpp"
+#include "Utils.hpp"
+
 #include <cstring> // strerror, bzero
 #include <errno.h> // errno
 #include <unistd.h> // close
@@ -30,15 +32,17 @@ WebServ::WebServ()
 
 WebServ::WebServ(WebServ const & copy)
     :   _epollFd(copy._epollFd),
-        _mapFd(copy._mapFd)
+        _mapFd(copy._mapFd),
+		_clientTimes(copy._clientTimes)
 {}
 
 WebServ &   WebServ::operator=(WebServ const & rhs)
 {
     if (this != &rhs)
     {
-        this->_epollFd = rhs._epollFd;
-        this->_mapFd = rhs._mapFd;
+        _epollFd = rhs._epollFd;
+        _mapFd = rhs._mapFd;
+		_clientTimes = rhs._clientTimes;
     }
     return (*this);
 }
@@ -60,28 +64,18 @@ WebServ::~WebServ()
 * PUBLIC METHODS
 ****************/
 
-/// @brief Add a pair to map servers
-/// @param server <file descriptor, Server object>
-void    WebServ::addServer(Server const & server)
+/// @brief 
+/// @param fileDescriptor 
+void    WebServ::addFd(AFileDescriptor * fileDescriptor)
 {
-	Server * serv = new Server(server);
-    _mapFd[serv->getFd()] = serv;
+    _mapFd[fileDescriptor->getFd()] = fileDescriptor;
 }
 
 /// @brief 
-/// @param client 
-void	WebServ::addClient(Client const & client)
+/// @param fdTime 
+void	WebServ::addClientTimes(std::pair<int, long long> clientInfo)
 {
-	Client * cli = new Client(client);
-    _mapFd[cli->getFd()] = cli;
-}
-
-/// @brief 
-/// @param cgi 
-void    WebServ::addCgi(Cgi const & cgi)
-{
-	Cgi * cgiTmp = new Cgi(cgi);
-    _mapFd[cgiTmp->getFd()] = cgiTmp;
+	_clientTimes.push_back(clientInfo);
 }
 
 /// @brief Init an epoll and add listening socket
@@ -129,6 +123,7 @@ void    WebServ::start()
 			if (!(event & EPOLLIN) && !(event & EPOLLOUT))
 				aFd->doOnError(*this, event);
 		}
+		//handleTimeout();
 	}
 }
 
@@ -150,12 +145,12 @@ void	WebServ::removeFd(int fd)
 	delete _mapFd[fd];
 	_mapFd.erase(fd);
 	
-	std::vector<std::pair<int, long long> >::iterator it = _times.begin();
-	for (; it != _times.end(); it++)
+	std::vector<std::pair<int, long long> >::iterator it = _clientTimes.begin();
+	for (; it != _clientTimes.end(); it++)
 	{
 		if (it->first == fd)
 		{
-			_times.erase(it);
+			_clientTimes.erase(it);
 			break;
 		}
 	}

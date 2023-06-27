@@ -6,63 +6,15 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 22:13:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/27 09:36:20 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Response.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
-
-void    Response::badRequest(std::vector<unsigned char> & rawData)
-{
-    std::string body = "bad request";
-    std::string response = commonResponse(body.c_str(), "10");
-    std::cout << response;
-    rawData.assign(response.begin(), response.end());
-}
-
-void    Response::createResponse(std::vector<unsigned char> & rawData, Client const & Client)
-{
-    std::string filename = Client.getServerInfo().getRoot() + "/" + Client.getRequest().getFileName();
-    std::string response;
-    std::stringstream ss;
-    std::ifstream is (filename.c_str(), std::ifstream::binary);
-
-    if (is.good()) {
-        // get length of file:
-        is.seekg (0, is.end);
-        int length = is.tellg();
-        is.seekg (0, is.beg);
-
-        ss << length;
-
-        char * buffer = new char [length];
-        is.read (buffer,length);
-        is.close();
-
-        response = commonResponse(buffer, ss.str());
-
-        delete[] buffer;
-  }
-
-    rawData.assign(response.begin(), response.end());
-}
-
-std::string     Response::commonResponse(const char * body, std::string size)
-{
-    
-    std::string response = std::string("HTTP/1.1 ") + "200 " + "Ok\r\n";
-    response += "Server: webserv (Ubuntu)\r\n";
-    response += "Date: Sat, 10, Jun 2023 09:15:38 GMT\r\n";
-    response += "Content-Type: text/html; charset=utf-8\r\n";
-    response += "Content-Length: " + size + "\r\n";
-    response += "Connection: keep-alive\r\n\r\n";
-    response += body;
-
-    return (response);
-}
 
 std::string     Response::cgiSimpleResponse(std::string & body)
 {
@@ -70,7 +22,6 @@ std::string     Response::cgiSimpleResponse(std::string & body)
     std::stringstream ss;
     ss << body.size();
     
-
     response += "Server: webserv (Ubuntu)\r\n";
     response += "Date: Sat, 10, Jun 2023 09:15:38 GMT\r\n";
     response += "Content-Type: text/html\r\n";
@@ -79,4 +30,44 @@ std::string     Response::cgiSimpleResponse(std::string & body)
     response += body;
 
     return (response);
+}
+
+std::string     Response::commonResponse(status_code_t status)
+{
+    std::string common = std::string("HTTP/1.1 ");
+    common += Syntax::intToString(status) + " " + Syntax::responseStatus.at(status) + "\r\n";
+    common += "Server: webserv (Ubuntu)\r\n";
+    common += "Date: " + Syntax::getFormattedDate(time(NULL)) + "\r\n";
+
+    return (common);
+}
+
+std::string     Response::bodyHeaders(std::vector<unsigned char> body, std::string extension)
+{
+    std::string headers = "";
+    if (body.empty())
+        return headers;
+    headers += "Content-Type: " + Syntax::mimeTypes.at(extension) + "\r\n";
+    headers += "Content-Length: " + Syntax::intToString(body.size()) + "\r\n";
+    return headers;
+}
+
+void    Response::createResponse(resp_t resp)
+{
+    std::string response = commonResponse(resp.status);
+    response += bodyHeaders(resp.body, resp.extension);
+    
+    if (resp.keepAlive)
+        response += "Connection: keep-alive\r\n";
+    else
+        response += "Connection: close\r\n";
+
+    response += "\r\n";
+    if (resp.body.empty())
+        resp.rawData.assign(response.begin(), response.end());
+    else
+    {
+        resp.rawData.assign(response.begin(), response.end());
+        resp.rawData.insert(resp.rawData.end(), resp.body.begin(), resp.body.end());
+    }
 }

@@ -16,8 +16,11 @@
 #include "AFileDescriptor.hpp"
 #include "Request.hpp"
 #include "Server.hpp"
+#include "Syntax.hpp"
 
 #define BUFFER_SIZE		1024
+
+class Cgi;
 
 class Client : public AFileDescriptor
 {
@@ -27,6 +30,7 @@ class Client : public AFileDescriptor
 		ServerConf 						_serverInfoCurr; 
 		Request							_request;
 		bool							_responseReady;
+		Cgi *							_cgi;
 
 		Client(void);
 
@@ -51,6 +55,8 @@ class Client : public AFileDescriptor
 		virtual void doOnWrite(WebServ & webServ);
 		virtual void doOnError(WebServ & webServ, uint32_t event);
 
+		void	errorResponse(status_code_t status);
+		void	getResponse();
 		void	responseCgi(std::string const & response);
 };
 

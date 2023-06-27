@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/24 18:18:41 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/26 10:30:06 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,20 +166,14 @@ void    Parser::createServerSockets(WebServ & webServ) const
 		struct sockaddr_in sockaddr;
 		struct protoent *proto;
 
-		//The getprotobyname function is a part of the C library functions which is used to map a protocol name such as 
-		// "tcp" to the corresponding protocol number defined in the netinet/in.h header file.
 		if (!(proto = getprotobyname("tcp")))
 			throw(SetServerException("Problem using protobyname, protocol not found"));
 		if ((socketFd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) == -1)
 			throw(SetServerException("Problem creating Socket"));
 		DEBUG_COUT("Server " + it->first.first + ":" + Syntax::intToString(it->first.second) + " created");
-		// allows a socket to be bound to an address that is already in use, provided that the original socket using the address is no longer active. 
-		//This behavior is useful in cases where the server needs to restart after a crash or when multiple instances of the server need to run on the same machine.
-		//This option allows the socket to be bound to a previously used address and port, which is useful in cases where the socket is closed and then immediately reopened,
-		// without waiting for the operating system to release the socket resources. Without this option,
-		//the socket may fail to bind to the address and port, resulting in a "Address already in use" error.
 		if (setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled)) == -1)
 			throw(SetServerException("Problem setting Socket options"));//
+
 		sockaddr.sin_family = AF_INET;
 		sockaddr.sin_port = htons(it->first.second);
 		sockaddr.sin_addr.s_addr = inet_addr(it->first.first.c_str());
@@ -187,11 +181,10 @@ void    Parser::createServerSockets(WebServ & webServ) const
 			throw(SetServerException("Problem binding socket"));
 		DEBUG_COUT("Server with file descriptor " <<  socketFd << " has been successfully bind on port: " << Syntax::intToString(it->first.second));
 
-		//if (fcntl(socketFd, F_SETFL, O_NONBLOCK) == -1) //makes the socket nonblock
-		//    throw(SetServerException("Problem setting the socket"));
 		if (listen(socketFd, MAX_CLIENT))
 			throw(SetServerException("Problem with listen")); 
-		webServ.addServer(Server(socketFd, it->second));  
+
+		webServ.addFd(new Server(socketFd, it->second));  
     }
 }
 

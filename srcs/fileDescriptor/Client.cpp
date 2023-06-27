@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/25 22:18:48 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/27 10:55:01 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@
  *****************/
 
 Client::Client(void)
-	: AFileDescriptor(), _responseReady(false)
+	: AFileDescriptor(), _responseReady(false), _cgi(NULL)
 {
 }
 
@@ -41,7 +41,8 @@ Client::Client(Client const &copy)
 	  _serverInfo(copy._serverInfo),
 	  _serverInfoCurr(copy._serverInfoCurr),
 	  _request(copy._request),
-	  _responseReady(copy._responseReady)
+	  _responseReady(copy._responseReady),
+	  _cgi(copy._cgi)
 {
 }
 
@@ -51,9 +52,11 @@ Client &Client::operator=(Client const &rhs)
 	{
 		_fd = rhs._fd;
 		_rawData = rhs._rawData;
+		_serverInfo = rhs._serverInfo;
 		_serverInfoCurr = rhs._serverInfoCurr;
 		_request = rhs._request;
 		_responseReady = rhs._responseReady;
+		_cgi = rhs._cgi;
 	}
 
 	return (*this);
@@ -141,19 +144,17 @@ void Client::doOnWrite(WebServ &webServ)
 		Cgi cgi = Cgi(*this);
 		if (cgi.run() < 0)
 		{
-			Response::createResponse(_rawData, *this);
-			_responseReady = true;
+			errorResponse(INTERNAL_SERVER_ERROR);
 			webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 			return;
 		}
-		webServ.addCgi(cgi);
+		webServ.addFd(new Cgi(cgi));
 		webServ.updateEpoll(_fd, 0, EPOLL_CTL_MOD);
 		webServ.updateEpoll(cgi.getReadFd(), EPOLLIN, EPOLL_CTL_ADD);
 	}
 	else
 	{
-		Response::createResponse(_rawData, *this);
-		_responseReady = true;
+		getResponse();
 		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 }
@@ -172,6 +173,8 @@ void Client::responseCgi(std::string const &response)
 	_responseReady = true;
 	_rawData.assign(response.begin(), response.end());
 }
+
+
 
 /******************************************************************************/
 
@@ -205,4 +208,45 @@ bool Client::searchHeaders()
 		throw RequestError("Invalid headers");
 	_rawData.erase(_rawData.begin(), it + 4);
 	return true;
+}
+
+void	Client::errorResponse(status_code_t status)
+{
+	//TODO: Find error file 
+	std::string extension = "html";
+
+	std::string error = "<html>\n<head><title>" + Syntax::intToString(status) + Syntax::responseStatus.at(status) + "</title></head>\n<body>\n<center><h1>" + Syntax::intToString(status) + Syntax::responseStatus.at(status) + "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
+	std::vector<unsigned char> body = std::vector<unsigned char>(error.begin(), error.end());
+
+	resp_t resp = {status, body, extension, _rawData, false};
+	Response::createResponse(resp);
+	_responseReady = true;
+}
+
+void	Client::getResponse()
+{
+	//TODO: Find error file 
+	std::vector<unsigned char> body;
+    std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getFileName();
+    std::ifstream is (filename.c_str(), std::ifstream::binary);
+
+    if (is.good()) {
+        is.seekg (0, is.end);
+        int length = is.tellg();
+        is.seekg (0, is.beg);
+
+        char * buffer = new char [length];
+        is.read (buffer,length);
+		body = std::vector<unsigned char>(buffer, buffer+length);
+        is.close();
+		delete buffer;
+
+		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
+		Response::createResponse(resp);
+		_responseReady = true;
+	}
+	else
+	{
+		errorResponse(NOT_FOUND);
+	}
 }

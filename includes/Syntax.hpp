@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/30 21:54:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/30 21:54:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/26 23:10:52 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -163,13 +163,13 @@ class Syntax {
 
 
 
-		static std::map<status_code_t, std::string> 		_response_status_map;
+		static const std::map<status_code_t, std::string> 	responseStatus;
+		static const std::map<std::string, std::string>		mimeTypes;
 		static const method_tab_entry_t						method_tab[];
 		static const server_instruction_tab_entry_t 		server_instructions_tab[];
 		static const location_instruction_tab_entry_t 		location_instructions_tab[];
 		static const request_header_tab_entry_t				request_header_tab[];
 		static const answer_header_tab_entry_t				answer_header_tab[];
-		static const std::map<std::string, std::string>		_mime_types_map;
 
 		static std::string				trimComments(const std::string &str);
 		static std::string				trimWhitespaces(const std::string& str);
@@ -188,8 +188,6 @@ class Syntax {
 		static int 						correctServerInstruction(std::vector<std::string> token);
 		static int 						correctLocationInstruction(std::vector<std::string> token);
 		static int 						correctMethodInstruction(std::vector<std::string> token);
-		static void 					fill_response_status_map(std::map<status_code_t, std::string> &map);
-		static void 					fillMimeTypeMap(std::map<std::string, std::string> &mime_types_map);
 		static std::string				getFormattedDate(std::time_t time);
 
 
@@ -197,6 +195,9 @@ class Syntax {
 		Syntax(); 
 		Syntax(const Syntax& src);
 		Syntax& operator=(const Syntax& rhs);
+
+		static std::map<status_code_t, std::string>	initResponseStatus();
+		static std::map<std::string, std::string> 	initMimeTypes();
 };
-		
+
 #endif
