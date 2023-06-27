@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/26 11:15:24 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/27 10:59:31 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,8 +19,7 @@
 #include "AFileDescriptor.hpp"
 #include "Cgi.hpp"
 
-#define MAX_EVENTS  1024
-#define TIMEOUT     10000
+#define MAX_EVENTS 1024
 
 class WebServ
 {

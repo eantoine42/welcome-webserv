@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/26 14:36:37 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/27 10:58:27 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@
 #include <sys/socket.h> // accept
 #include <fcntl.h> // fcntl
 #include <stdio.h> // REMOVE
+#include "Syntax.hpp"
+#include "Debugger.hpp"
 
 /*****************
 * CANNONICAL FORM
@@ -104,17 +106,19 @@ void    WebServ::start()
     int nfds;
     struct epoll_event events[MAX_EVENTS];
     int j = 0;
+	std::vector<std::pair<int,long long> > vectFD;
 
 	while (j != 1)
 	{
         // How handle if nfds < 0
-		nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, -1);
+		nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, 0);
 
 		for (int i = 0; i < nfds; i++)
 		{
 			int					fd = events[i].data.fd;
 			uint32_t			event = events[i].events;
 			AFileDescriptor *	aFd = _mapFd[fd];
+			vectFD.push_back(std::make_pair(fd, Syntax::getTimeOfDayMs()));
 			
 			if (event & EPOLLIN)
 				aFd->doOnRead(*this);
@@ -124,6 +128,35 @@ void    WebServ::start()
 				aFd->doOnError(*this, event);
 		}
 		//handleTimeout();
+	}
+}
+
+void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
+{
+	struct epoll_event ev;
+
+	bzero(&ev, sizeof(ev));
+	ev.events = event;
+	ev.data.fd = fd;
+	if (epoll_ctl(_epollFd, mod, fd, &ev) < 0)
+		throw EpollInitError(strerror(errno));
+}
+
+void	WebServ::removeFd(int fd)
+{
+	if (_mapFd.find(fd) == _mapFd.end())
+		return ;
+	delete _mapFd[fd];
+	_mapFd.erase(fd);
+	
+	std::vector<std::pair<int, long long> >::iterator it = _times.begin();
+	for (; it != _times.end(); it++)
+	{
+		if (it->first == fd)
+		{
+			_times.erase(it);
+			break;
+		}
 	}
 }
 

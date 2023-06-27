@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/30 21:54:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/26 23:10:52 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/27 10:58:04 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -189,6 +189,7 @@ class Syntax {
 		static int 						correctLocationInstruction(std::vector<std::string> token);
 		static int 						correctMethodInstruction(std::vector<std::string> token);
 		static std::string				getFormattedDate(std::time_t time);
+		static long	long				getTimeOfDayMs();
 
 
 	private:

@@ -6,6 +6,7 @@
 #include <sstream> // stringstream
 #include <algorithm> // replace if
 #include <stack>
+#include <sys/time.h>
 
 /**
  * @brief trim line from # until the end
@@ -622,3 +623,4 @@ std::string	Syntax::getFormattedDate(std::time_t time)
 
 std::map<status_code_t, std::string> const	Syntax::responseStatus = initResponseStatus();
 std::map<std::string, std::string> const	Syntax::mimeTypes = initMimeTypes();
+
