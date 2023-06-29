@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/11 20:45:21 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/28 10:00:17 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,5 +72,7 @@ class Request
 		bool	handleMessageBody(std::vector<unsigned char> messageBody);
 
 };
+
+std::ostream    &operator<<(std::ostream & o, Request const & r);
 
 #endif

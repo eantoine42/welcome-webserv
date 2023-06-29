@@ -14,9 +14,9 @@
 #define CLIENT_HPP
 
 #include "AFileDescriptor.hpp"
+#include "HttpUtils.hpp"
 #include "Request.hpp"
 #include "Server.hpp"
-#include "Syntax.hpp"
 
 #define BUFFER_SIZE		1024
 

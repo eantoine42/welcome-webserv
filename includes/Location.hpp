@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/05/23 18:21:22 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/29 23:16:09 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,20 @@
 #include <string>
 #include <map>
 #include <vector>
+
+enum location_instruction_t {
+	L_ROOT,
+	METHODS,
+	L_INDEX,
+	L_CGI,
+	L_AUTOINDEX,
+	UPLOAD_DIR,
+	RETURN,
+	L_CLIENT_MAX_BODY_SIZE,
+	L_ERROR_PAGE,
+	URI,
+	TOTAL_LOCATION_INSTRUCTIONS
+};
 
 class Location
 {
@@ -51,6 +65,7 @@ class Location
 		typedef void (Location::*loc_func)(std::vector<std::string> );
 		void init_vector_loc_fct(std::vector<loc_func> &funcs);
 
+
 	public:
 		Location();
 		Location(const Location &copy);
@@ -77,6 +92,14 @@ class Location
 		long int							const &getClientBodySize() const;
 		std::string							const &getError() const;
 		std::map<std::string, std::string>	const &getCgi() const;
+		
+		struct location_instruction_tab_entry_t 
+		{
+			location_instruction_t	instruction_index;
+			std::string 	name;
+		};
+		static const location_instruction_tab_entry_t 	LOCATION_INSTRUCTIONS[];
+		static int	correctLocationInstruction(std::vector<std::string> token);
 };
 
 std::ostream    &operator<<(std::ostream &o, Location const &i);

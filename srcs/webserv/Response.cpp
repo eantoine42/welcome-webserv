@@ -6,11 +6,13 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/27 09:36:20 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/29 22:16:57 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Response.hpp"
+#include "StringUtils.hpp"
+#include "TimeUtils.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -35,9 +37,9 @@ std::string     Response::cgiSimpleResponse(std::string & body)
 std::string     Response::commonResponse(status_code_t status)
 {
     std::string common = std::string("HTTP/1.1 ");
-    common += Syntax::intToString(status) + " " + Syntax::responseStatus.at(status) + "\r\n";
+    common += StringUtils::intToString(status) + " " + HttpUtils::RESPONSE_STATUS.at(status) + "\r\n";
     common += "Server: webserv (Ubuntu)\r\n";
-    common += "Date: " + Syntax::getFormattedDate(time(NULL)) + "\r\n";
+    common += "Date: " + TimeUtils::getFormattedDate(time(NULL)) + "\r\n";
 
     return (common);
 }
@@ -47,8 +49,9 @@ std::string     Response::bodyHeaders(std::vector<unsigned char> body, std::stri
     std::string headers = "";
     if (body.empty())
         return headers;
-    headers += "Content-Type: " + Syntax::mimeTypes.at(extension) + "\r\n";
-    headers += "Content-Length: " + Syntax::intToString(body.size()) + "\r\n";
+    // TODO: Check mime type
+    headers += "Content-Type: " + HttpUtils::MIME_TYPES.at(extension) + "\r\n";
+    headers += "Content-Length: " + StringUtils::intToString(body.size()) + "\r\n";
     return headers;
 }
 

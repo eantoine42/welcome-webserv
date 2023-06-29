@@ -1,10 +1,20 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/06/29 22:17:26 by lfrederi          #+#    #+#             */
+/*   Updated: 2023/06/29 22:17:50 by lfrederi         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include <iostream>
 #include <cstring>
 #include "WebServ.hpp"
 #include "Debugger.hpp"
 #include "Parser.hpp"
-#include "Syntax.hpp"
 
 extern volatile bool g_run;
 
@@ -33,9 +43,6 @@ int     main(int argc, const char **argv)
         Parser parser(argv[argc]);
 		parser.parseConfFile(webServ);
         webServ.epollInit();
-		//autoindex autind("/");
-		//std::cout<<autind.getIndexPage()<<std::endl;
-		//std::cout << serverlist << std::endl;
     }
     catch (const std::exception &e) {
         std::cerr << "Error config: " << e.what() << std::endl;
@@ -43,7 +50,6 @@ int     main(int argc, const char **argv)
     }
 
     webServ.start();
-
 
 	return (0);
 }

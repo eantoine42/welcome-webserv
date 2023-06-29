@@ -12,8 +12,8 @@ CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -g
 # DEBUG_FILE = Debugger.cpp
 
 FILE_DESCRIPTOR_SRCS = $(addprefix fileDescriptor/, AFileDescriptor.cpp Server.cpp Client.cpp Cgi.cpp)
-CONFIG_SRCS = $(addprefix config/, ServerConf.cpp Location.cpp Syntax.cpp Parser.cpp)
-UTILS_SRCS = $(addprefix utils/, Debugger.cpp Utils.cpp)
+CONFIG_SRCS = $(addprefix config/, ServerConf.cpp Location.cpp Parser.cpp)
+UTILS_SRCS = $(addprefix utils/, Debugger.cpp FileUtils.cpp StringUtils.cpp TimeUtils.cpp HttpUtils.cpp)
 WEBSEV_SRCS = $(addprefix webserv/, WebServ.cpp Request.cpp Response.cpp)
 
 SRCS_PATH = srcs/
@@ -33,8 +33,8 @@ HEADER_PATH = includes/
 
 HEADER_FILE = Request.hpp Debugger.hpp AFileDescriptor.hpp \
               ServerConf.hpp Client.hpp Server.hpp Location.hpp \
-			  Exception.hpp Syntax.hpp Parser.hpp Utils.hpp \
-			  WebServ.hpp Cgi.hpp Response.hpp
+			  Exception.hpp Parser.hpp StringUtils.hpp TimeUtils.hpp HttpUtils.hpp \
+			  FileUtils.hpp WebServ.hpp Cgi.hpp Response.hpp
 
 HEADER = $(addprefix $(HEADER_PATH), $(HEADER_FILE))
 

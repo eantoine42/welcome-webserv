@@ -6,12 +6,12 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/21 22:09:52 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/29 23:28:13 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConf.hpp"
-#include "Syntax.hpp"
+#include "StringUtils.hpp"
 #include "Client.hpp"
 #include "Exception.hpp"
 #include "Debugger.hpp"
@@ -24,6 +24,25 @@
 #include <cstring>		// bzero
 #include <sys/epoll.h>	// epoll_ctl
 #include <algorithm>
+
+
+/************************
+ * INIT STATIC VARIABLES
+ ***********************/
+
+const ServerConf::server_instruction_tab_entry_t	ServerConf::SERVER_INSTRUCTIONS[] = 
+{
+	{S_ROOT, "root"},
+	{LISTEN, "listen"},
+	{SERVER_NAME, "server_name"},
+	{S_ERROR_PAGE, "error_page"},
+	{S_INDEX, "index"},
+	{S_AUTOINDEX, "autoindex"},
+	{S_CLIENT_MAX_BODY_SIZE, "client_max_body_size"},
+	{S_CGI, "cgi"},
+	{LOCATION_INSTRUCTION, "location"}
+};
+/******************************************************************************/
 
 /*****************
  * CANNONICAL FORM
@@ -60,15 +79,15 @@ ServerConf &ServerConf::operator=(ServerConf const &src)
 	if (this != &src)
 	{
 		_root = src._root;
-	  	_port = src._port;
-	  	_server_name = src._server_name;
-	  	_IP = src._IP;
-	  	_error_pages = src._error_pages;
-	  	_index = src._index;
-	  	_autoindex = src._autoindex;
-	  	_client_body_size = src._client_body_size;
-	  	_cgi = src._cgi;
-	  	_location = src._location;
+		_port = src._port;
+		_server_name = src._server_name;
+		_IP = src._IP;
+		_error_pages = src._error_pages;
+		_index = src._index;
+		_autoindex = src._autoindex;
+		_client_body_size = src._client_body_size;
+		_cgi = src._cgi;
+		_location = src._location;
 	}
 	return *this;
 }
@@ -76,7 +95,6 @@ ServerConf &ServerConf::operator=(ServerConf const &src)
 ServerConf::~ServerConf()
 {
 }
-
 /******************************************************************************/
 
 /***********
@@ -114,7 +132,7 @@ void ServerConf::setPort(std::vector<std::string> token)
 	std::string str;
 	if (token.size() > 2)
 		throw(ConfFileParseError("Only one port allowed"));
-	std::vector<std::string> tmp = Syntax::splitString(token[1], ":");
+	std::vector<std::string> tmp = StringUtils::splitString(token[1], ":");
 	if (tmp.size() == 1)
 		str = tmp[0].substr(0, tmp[0].size() - 1);
 	else
@@ -130,7 +148,7 @@ void ServerConf::setIp(std::vector<std::string> token)
 	std::string str;
 	if (token.size() > 2)
 		throw(ConfFileParseError("Only one IP:port allowed"));
-	std::vector<std::string> tmp = Syntax::splitString(token[1], ":");
+	std::vector<std::string> tmp = StringUtils::splitString(token[1], ":");
 	if ((!tmp[0].compare("*") && tmp[0].size() == 1))
 	{
 		_IP = tmp[0];
@@ -141,7 +159,7 @@ void ServerConf::setIp(std::vector<std::string> token)
 		_IP = "127.0.0.1";
 		return;
 	}
-	std::vector<std::string> tmp1 = Syntax::splitString(tmp[0], ".");
+	std::vector<std::string> tmp1 = StringUtils::splitString(tmp[0], ".");
 	if (tmp1.size() != 4)
 		throw(ConfFileParseError("IP formating problem"));
 	for (int j = 0; j < 4; j++)
@@ -246,8 +264,10 @@ void ServerConf::setClientBodySize(std::vector<std::string> token)
  * PUBLIC METHODS
  ****************/
 
-/// @brief
-/// @param Server_info
+/**
+ * @brief 
+ * @param Server_info 
+ */
 void ServerConf::cleanDupServerConf(std::vector<ServerConf> Server_info)
 {
 	if (Server_info.size() == 0)
@@ -257,14 +277,14 @@ void ServerConf::cleanDupServerConf(std::vector<ServerConf> Server_info)
 	std::string list_names;
 	std::string res;
 	std::vector<std::string> vect_names1;
-	std::vector<std::string> vect_names2 = Syntax::splitString(this->_server_name);
+	std::vector<std::string> vect_names2 = StringUtils::splitString(_server_name);
 
 	for (; it != Server_info.end(); it++)
 	{
 		if (!(this->_IP.compare(it->_IP)) && (this->_port == (it->_port)))
 		{
 			list_names = (*it).getName();
-			vect_names1 = Syntax::splitString(list_names);
+			vect_names1 = StringUtils::splitString(list_names);
 			std::vector<std::string> vect_names4(vect_names1.size() + vect_names2.size());
 			it2 = std::set_intersection(vect_names1.begin(), vect_names1.end(), vect_names2.begin(), vect_names2.end(), vect_names4.begin());
 			vect_names4.resize(it2 - vect_names4.begin());
@@ -295,7 +315,7 @@ void ServerConf::cleanDupServerConf(std::vector<ServerConf> Server_info)
 void ServerConf::setServerConf(const std::string &str)
 {
 	int count = 0;
-	int pos_end = Syntax::findClosingBracket(str);
+	int pos_end = StringUtils::findClosingBracket(str);
 	int location_ct = 0;
 	// DEBUG_COUT("\n****ServerConf to parse without line ServerConf {  \n\n" + str);
 	while (count < pos_end)
@@ -311,13 +331,14 @@ void ServerConf::setServerConf(const std::string &str)
 		else
 			addLocation(str, count, ++location_ct);
 	}
-	// std::cout<<*this<<std::endl;
 }
 
-/// @brief
-/// @param str
-/// @param count
-/// @param Server_ct
+/**
+ * @brief 
+ * @param str 
+ * @param count 
+ * @param Server_ct 
+ */
 void ServerConf::addLocation(std::string str, int &count, int &Server_ct)
 {
 	Location loc(getPort(), Server_ct, getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize());
@@ -355,7 +376,7 @@ int ServerConf::skipLocationBlock(std::string str, int count)
 			in = 1;
 		i++;
 	}
-	ct += Syntax::findClosingBracket(str.substr(i + 2));
+	ct += StringUtils::findClosingBracket(str.substr(i + 2));
 	return (ct - 1 - count);
 }
 
@@ -366,17 +387,19 @@ int ServerConf::skipLocationBlock(std::string str, int count)
 int ServerConf::getLocationBloc(std::string str, int &count)
 {
 	std::vector<std::string> token;
-	std::string line = Syntax::getLine(str, count);
-	if ((token = Syntax::splitString(line, WHITESPACES)).empty())
+	std::string line = StringUtils::getLine(str, count);
+	if ((token = StringUtils::splitString(line, WHITESPACES)).empty())
 		return -1;
-	else if (Syntax::correctServerInstruction(token) != LOCATION_INSTRUCTION)
+	else if (correctServerInstruction(token) != LOCATION_INSTRUCTION)
 		return -1;
 	else
 		return 1;
 }
 
-/// @brief
-/// @param funcs
+/**
+ * @brief 
+ * @param funcs 
+ */
 void ServerConf::init_vector_ServerConf_fct(std::vector<ServerConf_func> &funcs)
 {
 	funcs.push_back(&ServerConf::setRoot);
@@ -401,10 +424,10 @@ void ServerConf::parseServerConf(std::string str, int &count)
 
 	std::vector<std::string> token;
 	int instruct;
-	std::string line = Syntax::getLine(str, count);
-	if ((token = Syntax::splitString(line, WHITESPACES)).empty())
+	std::string line = StringUtils::getLine(str, count);
+	if ((token = StringUtils::splitString(line, WHITESPACES)).empty())
 		return;
-	else if ((instruct = Syntax::correctServerInstruction(token)) != -1)
+	else if ((instruct = correctServerInstruction(token)) != -1)
 	{
 		if (instruct == LOCATION_INSTRUCTION)
 			count += skipLocationBlock(str, count);
@@ -415,6 +438,28 @@ void ServerConf::parseServerConf(std::string str, int &count)
 		throw(ConfFileParseError("Wrong input in ServerConf : Directive " + token[0] + " invalid"));
 }
 
+/**
+ * @brief Checks if the server directive are part of server or location block
+ *
+ * @param token
+ * @return true
+ * @return false
+ */
+int ServerConf::correctServerInstruction(std::vector<std::string> token)
+{
+	int i = 0;
+	// check if the token corresponds to a valid instruction in server block
+	while (i < TOTAL_SERVER_INSTRUCTIONS)
+	{
+		if (!token[0].compare(SERVER_INSTRUCTIONS[i].name))
+			return i;
+		i++;
+	}
+	if (StringUtils::isNothing(token[0]) || !token[0].compare("{"))
+		return TOTAL_SERVER_INSTRUCTIONS;
+	return -1;
+}
+
 /******************************************************************************/
 
 /***********
@@ -423,7 +468,6 @@ void ServerConf::parseServerConf(std::string str, int &count)
 
 std::ostream &operator<<(std::ostream &o, ServerConf const &i)
 {
-
 	o << "************* ServerConf bloc [" << i.getName() << "] *************" << std::endl;
 	if (i.getIp().empty() == false)
 		o << "    listen			=	[" << i.getIp() << "]" << std::endl;
@@ -453,10 +497,10 @@ std::ostream &operator<<(std::ostream &o, ServerConf const &i)
 	return (o);
 }
 
-std::ostream    &operator<<(std::ostream &o, std::vector<ServerConf>  const &srv)
+std::ostream &operator<<(std::ostream &o, std::vector<ServerConf> const &srv)
 {
-	for (size_t i = 0; i< srv.size(); i++)
-		o<<srv[i]<< std::endl;
+	for (size_t i = 0; i < srv.size(); i++)
+		o << srv[i] << std::endl;
 	return (o);
 }
 
@@ -469,7 +513,3 @@ std::ostream &operator<<(std::ostream &o, std::vector<std::string> const &str)
 			o << str[i];
 	return (o);
 }
-
-// TODO ignore a ServerConf if same ip:port or name eou add server
-// TODO verifier si chunk notre reponse en fonction maxbodysize
-// TODO sur quel critere la reponse est chunkee

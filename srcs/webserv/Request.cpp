@@ -6,14 +6,15 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/16 15:07:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/29 23:27:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
+#include "StringUtils.hpp"
+
 #include <string>
 #include <algorithm> // all_of
-#include "Syntax.hpp"
 #include <iostream> // REMOVE
 
 int const Request::requestUncomplete = REQUEST_UNCOMPLETE;
@@ -136,7 +137,7 @@ void	Request::setMessageBody(std::string const & messageBody)
 /// @return 
 bool	Request::handleRequestLine(std::string requestLine)
 {
-	std::vector<std::string> vec = Syntax::splitString(requestLine, " ");
+	std::vector<std::string> vec = StringUtils::splitString(requestLine, " ");
 	if (vec.size() != 3)
 		return false;
 	_httpMethod = vec[0];
@@ -173,7 +174,7 @@ bool	Request::handleRequestLine(std::string requestLine)
 /// @return 
 bool	Request::handleHeaders(std::string headers)
 {
-	std::vector<std::string> vec = Syntax::splitString(headers, "\r\n");
+	std::vector<std::string> vec = StringUtils::splitString(headers, "\r\n");
 	std::vector<std::string>::iterator it = vec.begin();
 
 	for (; it != vec.end(); it++)
@@ -184,7 +185,7 @@ bool	Request::handleHeaders(std::string headers)
 		if (std::find_if((*it).begin(), (*it).begin() + sep, isblank) != (*it).begin()+sep)
 			continue;
 		std::string key = (*it).substr(0, sep);
-		std::string value = Syntax::trimWhitespaces((*it).substr(sep + 1));
+		std::string value = StringUtils::trimWhitespaces((*it).substr(sep + 1));
 
 		_headers[key] = value;
 	}
@@ -202,3 +203,14 @@ bool	Request::handleMessageBody(std::vector<unsigned char> messageBody)
 	return true;
 }
 
+
+
+
+std::ostream    &operator<<(std::ostream & o, Request const & r)
+{
+	o << r.getHttpMethod() << " " << r.getPathRequest() << " " << r.getHttpVersion() << std::endl;
+	for (std::map<std::string, std::string>::const_iterator it = r.getHeaders().begin(); it != r.getHeaders().end(); it++)
+		o << it->first << ": " << it->second << std::endl; 
+	o << r.getMessageBody() << std::endl;
+	return o;
+}

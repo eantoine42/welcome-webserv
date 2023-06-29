@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:40:20 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/24 18:18:05 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/29 21:12:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,17 +17,23 @@
 #include "ServerConf.hpp"
 #include "WebServ.hpp"
 
+typedef std::pair<std::string, int> pairHostPort;
+
 class Parser
 {
     private:
 
-        std::string const                                                _configFile;
-        std::map< std::pair<std::string, int>, std::vector<ServerConf> > _map; // pair<host, port>
+        std::string const                                 _configFile;
+        std::map< pairHostPort, std::vector<ServerConf> > _map;
 
+        // Methods
         std::string     getStringConf() const;
         void            parseServers(std::vector<ServerConf> & servers, std::string strConfig);
         void            createServerSockets(WebServ & webServ) const;
 		void            fillServersMap(std::vector<ServerConf> & serverConfs);
+        char            checkChar(std::string str);
+        void            formatConfFile(std::string &conf);
+        void            testPath(const std::string &path);
 
     public:
 
@@ -37,8 +43,10 @@ class Parser
 		Parser & operator=(Parser const & rhs);
 		~Parser();
 
+        // Constructors
         Parser(std::string configFile);
 
+        // Methods
         void    parseConfFile(WebServ & webServ);
 };
 

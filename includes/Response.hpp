@@ -6,14 +6,14 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:08 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/26 18:32:50 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/29 22:06:12 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#include "Syntax.hpp"
+#include "HttpUtils.hpp"
 
 struct resp_t
 {

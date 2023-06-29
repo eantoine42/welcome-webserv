@@ -6,15 +6,15 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/26 10:57:02 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/29 22:19:17 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "Exception.hpp"
+#include "TimeUtils.hpp"
 #include "Client.hpp"
 #include "WebServ.hpp"
-#include "Utils.hpp"
 
 #include <unistd.h>		// close
 #include <sys/socket.h> // accept
@@ -74,7 +74,7 @@ void	Server::doOnRead(WebServ & webServ)
 	}
 
 	webServ.addFd(new Client(cs, _serverConfs));
-	webServ.addClientTimes(std::make_pair(cs, Utils::getTimeOfDayMs()));
+	webServ.addClientTimes(std::make_pair(cs, TimeUtils::getTimeOfDayMs()));
 }
 
 void	Server::doOnWrite(WebServ & webServ)

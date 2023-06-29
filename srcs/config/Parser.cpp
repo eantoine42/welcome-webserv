@@ -6,12 +6,13 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/26 10:30:06 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/29 23:25:39 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Parser.hpp"
-#include "Syntax.hpp"
+#include "StringUtils.hpp"
+#include "FileUtils.hpp"
 #include "Exception.hpp"
 #include "Debugger.hpp"
 
@@ -19,6 +20,7 @@
 #include <netinet/in.h> // sockaddr_in
 #include <arpa/inet.h> // inet_addr
 #include <netdb.h> // getprotobyname
+#include <fstream>
 
 /*****************
 * CANNONICAL FORM
@@ -55,17 +57,17 @@ void    Parser::parseConfFile(WebServ & webServ)
 	std::string conf_string_formated = "";
 	std::string temp;
 
-	Syntax::testPath(this->_configFile);
+	testPath(this->_configFile);
 	conf_string = getStringConf();
-	Syntax::formatConfFile(conf_string);
+	formatConfFile(conf_string);
 
-	int j = Syntax::nbLines(conf_string);
+	int j = StringUtils::nbLines(conf_string);
 	for (int i = 0; i < j; i++){
-		temp = Syntax::trimWhitespaces(Syntax::getLine(conf_string, i));
-		conf_string_formated += temp + Syntax::checkChar(temp);
+		temp = StringUtils::trimWhitespaces(StringUtils::getLine(conf_string, i));
+		conf_string_formated += temp + checkChar(temp);
 	}
 
-	Syntax::formatConfFile(conf_string_formated);
+	formatConfFile(conf_string_formated);
 	conf_string_formated.erase(conf_string_formated.size() - 1);
 	parseServers(server_list, conf_string_formated);
 	fillServersMap(server_list);
@@ -101,8 +103,8 @@ std::string     Parser::getStringConf() const
 	{
 		std::string temp;
 
-		temp = Syntax::trimComments(line);
-		temp = Syntax::trimWhitespaces(temp);
+		temp = StringUtils::trimComments(line);
+		temp = StringUtils::trimWhitespaces(temp);
 		content += temp;
 		content +="\n";
 	}
@@ -111,7 +113,7 @@ std::string     Parser::getStringConf() const
 //	if (DEBUG_STATUS)
   //  	std::cout << content << std::endl;
 	file.close();
-	if (!Syntax::checkBrackets(content))
+	if (!StringUtils::checkBrackets(content))
 		throw ConfFileParseError("Error in the backets");
 	return content;
 }
@@ -121,38 +123,38 @@ std::string     Parser::getStringConf() const
  * Parse server info in vector<Server>
  * server_info is updated with correct info
  * @param std::vector<server> server_info 
- * @param std::string str_config 
+ * @param std::string rawConfig 
  */
-void    Parser::parseServers(std::vector<ServerConf> & server_info, std::string str_config)
+void    Parser::parseServers(std::vector<ServerConf> & serverConfs, std::string rawConfig)
 {
 	size_t i = 0;
 	if (DEBUG_STATUS)
 	{
-		//DEBUG_COUT("conf file nb lines :" + Syntax::intToString(Syntax::nb_lines(str_config)));
-		//DEBUG_COUT("\n****Server to parse without line server {****  \n\n" + str_config);
+		//DEBUG_COUT("conf file nb lines :" + Syntax::intToString(Syntax::nb_lines(rawConfig)));
+		//DEBUG_COUT("\n****Server to parse without line server {****  \n\n" + rawConfig);
 	}
-	while (i < Syntax::nbLines(str_config))
+	while (i < StringUtils::nbLines(rawConfig))
 	{
-		if (!Syntax::isNothing(str_config, i))
+		if (!StringUtils::isNothing(rawConfig, i))
 		{
-			std::string	line = Syntax::getLine(str_config, i);
+			std::string	line = StringUtils::getLine(rawConfig, i);
 			if (!line.compare(0, 6, "server") && line.size() == 6)
 			{
 				i++;
-				std::string	line = Syntax::getLine(str_config, i);
+				std::string	line = StringUtils::getLine(rawConfig, i);
 				if (line.compare("{"))
 					throw(ConfFileParseError("Invalid Server Header"));
-				ServerConf temp_server;
-				temp_server.setServerConf( Syntax::trimLineToI(str_config, i + 1));
-				temp_server.cleanDupServerConf(server_info);
-				server_info.push_back(temp_server);
+				ServerConf tempServer;
+				tempServer.setServerConf( StringUtils::trimLineToI(rawConfig, i + 1));
+				tempServer.cleanDupServerConf(serverConfs);
+				serverConfs.push_back(tempServer);
 			}
 		}
 		i++;
 	}
 
 	if (DEBUG_STATUS)
-		std::cout << server_info << std::endl;
+		std::cout << serverConfs << std::endl;
 }
 
 void    Parser::createServerSockets(WebServ & webServ) const
@@ -170,7 +172,7 @@ void    Parser::createServerSockets(WebServ & webServ) const
 			throw(SetServerException("Problem using protobyname, protocol not found"));
 		if ((socketFd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) == -1)
 			throw(SetServerException("Problem creating Socket"));
-		DEBUG_COUT("Server " + it->first.first + ":" + Syntax::intToString(it->first.second) + " created");
+		DEBUG_COUT("Server " + it->first.first + ":" + StringUtils::intToString(it->first.second) + " created");
 		if (setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled)) == -1)
 			throw(SetServerException("Problem setting Socket options"));//
 
@@ -179,7 +181,7 @@ void    Parser::createServerSockets(WebServ & webServ) const
 		sockaddr.sin_addr.s_addr = inet_addr(it->first.first.c_str());
 		if (bind(socketFd, reinterpret_cast<struct sockaddr *>(&sockaddr), sizeof(sockaddr)) == -1)
 			throw(SetServerException("Problem binding socket"));
-		DEBUG_COUT("Server with file descriptor " <<  socketFd << " has been successfully bind on port: " << Syntax::intToString(it->first.second));
+		DEBUG_COUT("Server with file descriptor " <<  socketFd << " has been successfully bind on port: " << StringUtils::intToString(it->first.second));
 
 		if (listen(socketFd, MAX_CLIENT))
 			throw(SetServerException("Problem with listen")); 
@@ -196,5 +198,102 @@ void	Parser::fillServersMap(std::vector<ServerConf> & serverConfs)
 	{
 		std::pair<std::string, int> ipPort = make_pair(it->getIp(), it->getPort());
 		_map[ipPort].push_back(*it);
+	}
+}
+
+/**
+ * @brief tool used to format properly the conf string
+ * returning \n or " "
+ * 
+ * @param str 
+ * @return char 
+ */
+char	Parser::checkChar(std::string str)
+{
+		if (str[str.size()-1] == ';')
+			return '\n';
+		if (!str.compare("server") || !str.compare("{") || !str.compare("}") )
+			return '\n';
+		return (' ');
+}
+
+/**
+ * @brief makes sure the conf file lines finishes by ;
+ * and { are isolated in one line
+ * deleting the single \n
+ * 
+ * @param std::string &conf 
+ */
+void	Parser::formatConfFile(std::string &conf)
+{
+	int i = 0;
+	int j = conf.size();
+	while (i < j){
+		if (conf[i] == ';'){
+			conf.replace(i, 1, ";\n");
+			j++;
+		}
+		i++;
+	}
+	i = 0;
+	j = conf.size();
+	while (i < j){
+		if (conf[i] == '{'){
+			conf.replace(i, 1, "\n{\n");
+			j +=2;
+			i +=2;
+		}
+		else i++;
+	}
+	i = 0;
+	j = conf.size();
+	while (i < j){
+		if (conf[i] == '}'){
+			conf.replace(i, 1, "\n}\n");
+			j+=2;
+			i+=2;
+		}
+		else
+			i++;
+	}
+	i = 0;
+	j = conf.size();
+	while (i < j){
+		if (conf[i] == '\n' && conf[i+1] && conf[i+1] == '\n'){
+			conf.replace(i, 2, "\n");
+			j-=1;
+			i-=1;
+		}
+		else
+			i++;
+	}
+}
+
+/**
+ * @brief 
+ * test if path to .conf is correct, testing
+ * emptypath, extension, readable, if directory
+ * trying to open file
+ * @param path 
+ */
+void    Parser::testPath(const std::string &path)
+{
+	size_t ext_pos;
+	std::ifstream file;
+	
+	if (path.empty())
+		throw (EmptyConfPath());
+	ext_pos = path.find(".conf");
+	if (ext_pos == std::string::npos || ext_pos != path.size() - 5)
+		throw (BadExtensionConfFile());
+	if (!FileUtils::fileExists(path.c_str()))
+		throw (FileDoesNotExist());
+	if (!FileUtils::fileRead(path.c_str()))
+		throw (FileNotReadable());
+	if (FileUtils::isDirectory(path.c_str()))
+		throw (PathIsDir());
+	file.open(path.c_str(), std::ios_base::in);
+	if (!file) {
+		throw (InvalidConfFilePath());
 	}
 }
