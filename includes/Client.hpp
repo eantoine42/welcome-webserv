@@ -38,6 +38,7 @@ class Client : public AFileDescriptor
 		void		searchHeaders();
 		ServerConf	getCorrectServer();
 		void		handleException(std::exception & exception);
+		int			pathIsValid(std::string const path);
 
 	public:
 		

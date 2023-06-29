@@ -3,21 +3,22 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 21:33:17 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/10 19:37:24 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
+#include "Autoindex.hpp"
 #include "Debugger.hpp"
 #include "StringUtils.hpp"
+#include "FileUtils"
 #include "Response.hpp"
 #include "Exception.hpp"
 #include "WebServ.hpp"
 #include "Cgi.hpp"
-
 #include <cstddef>
 #include <sys/epoll.h>
 #include <iostream>
@@ -235,6 +236,16 @@ void	Client::getResponse()
 {
 	//TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
 	std::cout << _request;
+	//TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND)
+	int Valid = pathIsValid(_request.getPathRequest());
+	if (!Valid)
+	{
+		errorResponse(NOT_FOUND);
+	}
+	else if (Valid == 2)
+	{
+	//if directory and autoindex is on use autoindex to generate answer
+	}
 
 	std::vector<unsigned char> body;
     std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
@@ -274,7 +285,7 @@ ServerConf Client::getCorrectServer()
 	{
 		std::vector<Location>::const_iterator it1 = it->getLocation().begin();
 		for (; it1 != it->getLocation().end(); it1++)
-			if (_request.getPathRequest() == it1->getRoot())
+			if (_request.getPathRequest() == it1->getlocRoot())
 				return (*it);
 	}
 	return (*(_serverInfo.begin()));
@@ -292,4 +303,16 @@ void	Client::handleException(std::exception & exception)
 	{
 		errorResponse(INTERNAL_SERVER_ERROR);
 	}
+}
+
+int		pathIsValid(std::string const path)
+{
+	if (path.empty() || !FileUtils::fileExists(path.c_str()) ||
+		!FileUtils::fileRead(path.c_str()))
+		return 0;
+	else if (FileUtils::isDirectory(path.c_str()))
+		return 2;
+	else
+		return 1;
+	
 }

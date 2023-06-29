@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:16:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/06/30 12:12:47 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ class Location
 	private:
 		int									_port;
 		int									_loc_index;
-		std::string							_root;
+		std::string							_locRoot;
 		std::vector<std::string>			_allow_method;
 		std::vector<std::string>			_index;
 		std::map<std::string, std::string>	_cgi;
@@ -57,7 +57,7 @@ class Location
 		void	setIndex(std::vector<std::string> token);
 		void	setReturn(std::vector<std::string> token);
 		void	setAllowMethod(std::vector<std::string> token);
-		void	setRoot(std::vector<std::string> token);
+		void	setlocRoot(std::vector<std::string> token);
 		void	setUploadDir(std::vector<std::string> token);
 		void	setCgi(std::vector<std::string> token);
 		void	setClientBodySize(std::vector<std::string> token);
@@ -87,7 +87,7 @@ class Location
 		std::vector<std::string>			const &getIndex() const;
 		std::string							const &getReturn() const;
 		std::vector<std::string>			const &getAllowMethod() const;
-		std::string							const &getRoot() const;
+		std::string							const &getlocRoot() const;
 		std::string							const &getUploadDir() const;
 		long int							const &getClientBodySize() const;
 		std::string							const &getError() const;
