@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/10 19:37:24 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/10 19:38:26 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,11 @@
 #include "Autoindex.hpp"
 #include "Debugger.hpp"
 #include "StringUtils.hpp"
-#include "FileUtils"
+#include "FileUtils.hpp"
 #include "Response.hpp"
 #include "Exception.hpp"
 #include "WebServ.hpp"
+#include "FileUtils.hpp"
 #include "Cgi.hpp"
 #include <cstddef>
 #include <sys/epoll.h>
@@ -237,6 +238,9 @@ void	Client::getResponse()
 	//TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
 	std::cout << _request;
 	//TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND)
+
+	//TOdo
+	//construire le request path
 	int Valid = pathIsValid(_request.getPathRequest());
 	if (!Valid)
 	{
@@ -248,6 +252,7 @@ void	Client::getResponse()
 	}
 
 	std::vector<unsigned char> body;
+    std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
     std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
     std::ifstream is (filename.c_str(), std::ifstream::binary);
 
