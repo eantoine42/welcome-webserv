@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/10 19:39:42 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/10 19:40:06 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,6 +153,14 @@ void Client::doOnWrite(WebServ &webServ)
 		return;
 	}
 
+	/*
+		TODO: Verification de la requete avec le fichier conf:
+			- Si pathRequest == "/" -> verifier les indexs
+			- Cas du POST/DELETE sans extension php -> verifier si le chemin permet l'uploading
+			- Construction du path en fonction du bloc location ...
+	*/ 
+		
+
 	if (_request.getExtension().compare("php") == 0)
 	{
 		Cgi cgi = Cgi(*this);
@@ -187,8 +195,6 @@ void Client::responseCgi(std::string const &response)
 	_responseReady = true;
 	_rawData.assign(response.begin(), response.end());
 }
-
-
 
 /******************************************************************************/
 
