@@ -24,17 +24,7 @@ const Location::location_instruction_tab_entry_t	Location::LOCATION_INSTRUCTIONS
 	{URI, "uri"},
 };
 
-Location::Location(int port, int loc_index, std::map<std::string, std::string>	cgi, bool autoindex, std::vector<std::string> index, std::string root, int client_body_size)
-:	_port(port),
-	_loc_index(loc_index),
-	_locRoot(root),
-	_index(index),
-	_cgi(cgi),
-	_autoindex(autoindex),
-	_client_body_size(client_body_size)
-{}
 /******************************************************************************/
-
 
 Location::Location(int port, int loc_index, std::map<std::string, std::string> cgi, bool autoindex, std::vector<std::string> index, std::string root, int client_body_size)
 	: _port(port),

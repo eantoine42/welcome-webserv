@@ -1,5 +1,6 @@
 #include "Autoindex.hpp"
-#include "Syntax.hpp"
+#include "StringUtils.hpp"
+#include "TimeUtils.hpp"
 #include <dirent.h>
 #include <sys/stat.h>
 
@@ -132,7 +133,7 @@ std::string autoindex::_getFileSize(struct stat fileInfos)
 	if (fileInfos.st_mode & S_IFDIR) /* Is directory */
 		size = "-";
 	else
-		size = Syntax::intToString(fileInfos.st_size);
+		size = StringUtils::intToString(fileInfos.st_size);
 	_formatCell(&size);
 	return (size);
 }
@@ -141,7 +142,7 @@ std::string autoindex::_getFileModTime(struct stat fileInfos)
 {
 	std::string time;
 
-	time = Syntax::getFormattedDate(fileInfos.st_mtime);
+	time = TimeUtils::getFormattedDate(fileInfos.st_mtime);
 	_formatCell(&time);
 	return (time);
 }

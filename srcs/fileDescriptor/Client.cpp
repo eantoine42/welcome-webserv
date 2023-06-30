@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/10 19:38:26 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/10 19:39:42 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -253,7 +253,6 @@ void	Client::getResponse()
 
 	std::vector<unsigned char> body;
     std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
-    std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
     std::ifstream is (filename.c_str(), std::ifstream::binary);
 
     if (is.good()) {
@@ -265,7 +264,7 @@ void	Client::getResponse()
         is.read (buffer,length);
 		body = std::vector<unsigned char>(buffer, buffer+length);
         is.close();
-		delete buffer;
+		delete [] buffer;
 
 		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
 		Response::createResponse(resp);
@@ -310,7 +309,7 @@ void	Client::handleException(std::exception & exception)
 	}
 }
 
-int		pathIsValid(std::string const path)
+int		Client::pathIsValid(std::string const path)
 {
 	if (path.empty() || !FileUtils::fileExists(path.c_str()) ||
 		!FileUtils::fileRead(path.c_str()))
