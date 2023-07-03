@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:35:20 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/03 21:33:17 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,23 +107,34 @@ void Client::doOnRead(WebServ &webServ)
 	if ((n = recv(_fd, buffer, BUFFER_SIZE, 0)) > 0)
 		_rawData.assign(buffer, buffer + n);
 
-	// Try to read next time fd is NON_BLOCK and we must not check errno
-	if (n < 0)
+	if (n < 0) // Try to read next time fd is NON_BLOCK and we can't check errno
 		return;
-	// Socket connection close, a EOF was present
-	if (n == 0)
+	if (n == 0) // Client close connection
 	{
-		close(_fd);
 		webServ.removeFd(_fd);
 		return;
 	}
-	if (_request.getHttpMethod().empty() && searchRequestLine() == false)
-		return;
-	if (_request.getHeaders().empty() && searchHeaders() == false)
-		return;
-	if (_request.hasMessageBody() && _request.handleMessageBody(_rawData) == false)
-		return;
-	_rawData.erase(_rawData.begin(), _rawData.end());
+
+	try 
+	{
+		if (_request.getHttpMethod().empty())
+			searchRequestLine();
+		if (_request.getHeaders().empty())
+			searchHeaders();
+		if (_request.hasMessageBody())
+			_request.handleMessageBody(_rawData);
+	}
+	catch (RequestUncomplete & exception)
+	{
+		return ;
+	}
+	catch (std::exception & exception)
+	{
+		handleException(exception);
+		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+		return ;
+	}
+
 	_serverInfoCurr = getCorrectServer(); 
 	webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
@@ -183,32 +194,28 @@ void Client::responseCgi(std::string const &response)
  * PRIVATE METHODS
  *****************/
 
-bool Client::searchRequestLine()
+void	Client::searchRequestLine()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n'};
 
 	it = std::search(_rawData.begin(), _rawData.end(), src, src + 2);
 	if (it == _rawData.end())
-		return false;
-	if (!_request.handleRequestLine(std::string(_rawData.begin(), it)))
-		throw RequestError("Invalid request line");
+		throw RequestUncomplete();
+	_request.handleRequestLine(std::string(_rawData.begin(), it));
 	_rawData.erase(_rawData.begin(), it);
-	return true;
 }
 
-bool Client::searchHeaders()
+void	Client::searchHeaders()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};
 
 	it = std::search(_rawData.begin(), _rawData.end(), src, src + 4);
 	if (it == _rawData.end())
-		return false;
-	if (!_request.handleHeaders(std::string(_rawData.begin(), it)))
-		throw RequestError("Invalid headers");
+		throw RequestUncomplete();
+	_request.handleHeaders(std::string(_rawData.begin(), it));
 	_rawData.erase(_rawData.begin(), it + 4);
-	return true;
 }
 
 void	Client::errorResponse(status_code_t status)
@@ -272,4 +279,17 @@ ServerConf Client::getCorrectServer()
 	}
 	return (*(_serverInfo.begin()));
 
+}
+
+void	Client::handleException(std::exception & exception)
+{
+	DEBUG_COUT(exception.what());
+	try
+	{ 
+		dynamic_cast<RequestError &>(exception);
+		errorResponse(BAD_REQUEST);
+	} catch (std::exception & exception)
+	{
+		errorResponse(INTERNAL_SERVER_ERROR);
+	}
 }

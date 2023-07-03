@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/28 10:00:17 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/03 21:08:26 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,6 @@
 #include <string>
 #include <map>
 #include <vector>
-
-#define REQUEST_COMPLETE	1
-#define REQUEST_UNCOMPLETE	2
-#define	CRLF		"\r\n"
-#define CRLFCRLF	"\r\n\r\n"
 
 class Request
 {
@@ -33,8 +28,10 @@ class Request
 		std::string							_queryParam;
 		std::string							_httpVersion;
 		std::map<std::string, std::string>	_headers;
-		std::string							_messageBody;
+		std::vector<unsigned char>			_messageBody;
 		bool								_hasMessageBody;
+		bool								_encode;
+		int									_bodySize;
 
 
 	public:
@@ -56,7 +53,7 @@ class Request
 		std::string const & getQueryParam() const;
 		std::string const & getHttpVersion() const;
 		std::map<std::string, std::string> const & getHeaders() const;
-		std::string const & getMessageBody() const;
+		std::vector<unsigned char> const & getMessageBody() const;
 		bool				hasMessageBody() const;
 
 		// Seters
@@ -64,12 +61,11 @@ class Request
 		void	setPathRequest(std::string const & pathRequest);
 		void	setHttpVersion(std::string const & httpVersion);
 		void	setHeaders(std::map<std::string, std::string> const & headers);
-		void	setMessageBody(std::string const & messageBody);
 
 		// Members methods
-		bool	handleRequestLine(std::string requestLine);
-		bool	handleHeaders(std::string headers);
-		bool	handleMessageBody(std::vector<unsigned char> messageBody);
+		void	handleRequestLine(std::string requestLine);
+		void	handleHeaders(std::string headers);
+		void	handleMessageBody(std::vector<unsigned char> & rawData);
 
 };
 

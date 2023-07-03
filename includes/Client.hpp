@@ -34,9 +34,10 @@ class Client : public AFileDescriptor
 
 		Client(void);
 
-		bool		searchRequestLine();
-		bool		searchHeaders();
+		void		searchRequestLine();
+		void		searchHeaders();
 		ServerConf	getCorrectServer();
+		void		handleException(std::exception & exception);
 
 	public:
 		

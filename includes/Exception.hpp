@@ -232,4 +232,13 @@ class FileDescriptorError : public std::exception
 		}
 };
 
+class RequestUncomplete : public std::exception
+{
+	public:
+		char const	*what() const throw()
+		{
+			return "Request Uncomplete";
+		}
+};
+
 #endif

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:37:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:18:50 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/03 14:55:11 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -227,4 +227,14 @@ int		HttpUtils::correctMethodInstruction(std::vector<std::string> token)
 		j++;
 	}
 	return -1;
+}
+
+/**
+ * @brief 
+ * @param method 
+ * @return 
+ */
+bool	HttpUtils::isMethodAllowed(std::string method)
+{
+	return (method == "GET" || method == "POST" || method == "DELETE");
 }

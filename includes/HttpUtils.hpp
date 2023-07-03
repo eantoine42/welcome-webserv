@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:35:05 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:23:06 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/03 20:06:54 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -138,6 +138,7 @@ class HttpUtils
 		static std::map<std::string, std::string> 	initMimeTypes();
 
 		static int 	correctMethodInstruction(std::vector<std::string> token);
+		static bool	isMethodAllowed(std::string method);
 };
 
 #endif

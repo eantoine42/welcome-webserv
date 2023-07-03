@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:26:04 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/03 16:56:34 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,6 +140,7 @@ void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
 
 void	WebServ::removeFd(int fd)
 {
+	close(fd);
 	if (_mapFd.find(fd) == _mapFd.end())
 		return ;
 	delete _mapFd[fd];

@@ -6,19 +6,17 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:27:30 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/03 21:37:00 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Request.hpp"
 #include "StringUtils.hpp"
+#include "HttpUtils.hpp"
+#include "Exception.hpp"
 
 #include <string>
 #include <algorithm> // all_of
-#include <iostream> // REMOVE
-
-int const Request::requestUncomplete = REQUEST_UNCOMPLETE;
-int const Request::requestComplete = REQUEST_COMPLETE;
 
 /*****************
 * CANNONICAL FORM
@@ -32,18 +30,22 @@ Request::Request(Request const & copy)
 		_pathRequest(copy._pathRequest),
 		_httpVersion(copy._httpVersion),
 		_headers(copy._headers),
-		_messageBody(copy._messageBody)
+		_messageBody(copy._messageBody),
+		_encode(copy._encode),
+		_bodySize(copy._bodySize)
 {}
 
 Request & Request::operator=(Request const & rhs)
 {
 	if (this != &rhs)
 	{
-		this->_httpMethod = rhs._httpMethod;
-		this->_pathRequest = rhs._pathRequest;
-		this->_httpVersion = rhs._httpVersion;
-		this->_headers = rhs._headers;
-		this->_messageBody = rhs._messageBody;
+		_httpMethod = rhs._httpMethod;
+		_pathRequest = rhs._pathRequest;
+		_httpVersion = rhs._httpVersion;
+		_headers = rhs._headers;
+		_messageBody = rhs._messageBody;
+		_encode = rhs._encode;
+		_bodySize = rhs._bodySize;
 	}
 
 	return (*this);
@@ -59,72 +61,67 @@ Request::~Request()
 
 std::string const & Request::getHttpMethod() const
 {
-	return (this->_httpMethod);
+	return (_httpMethod);
 }
 
 std::string const & Request::getPathRequest() const
 {
-	return (this->_pathRequest);
+	return (_pathRequest);
 }
 
 std::string const &	Request::getFileName() const
 {
-	return (this->_fileName);
+	return (_fileName);
 }
 
 std::string const &	Request::getExtension() const
 {
-	return (this->_extension);
+	return (_extension);
 }
 
 std::string const &	Request::getQueryParam() const
 {
-	return (this->_queryParam);
+	return (_queryParam);
 }
 
 std::string const & Request::getHttpVersion() const
 {
-	return (this->_httpVersion);
+	return (_httpVersion);
 }
 
 std::map<std::string, std::string> const & Request::getHeaders() const
 {
-	return (this->_headers);
+	return (_headers);
 }
 
-std::string const & Request::getMessageBody() const
+std::vector<unsigned char> const & Request::getMessageBody() const
 {
-	return (this->_messageBody);
+	return (_messageBody);
 }
 
 bool	Request::hasMessageBody() const
 {
-	return (false);
+	return (_hasMessageBody);
 }
 
 void	Request::setHttpMethod(std::string const & httpMethod)
 {
-	this->_httpMethod = httpMethod;
+	_httpMethod = httpMethod;
 }
 
 void	Request::setPathRequest(std::string const & pathRequest)
 {
-	this->_pathRequest = pathRequest;
+	_pathRequest = pathRequest;
 }
 
 void	Request::setHttpVersion(std::string const & httpVersion)
 {
-	this->_httpVersion = httpVersion;
+	_httpVersion = httpVersion;
 }
 
 void	Request::setHeaders(std::map<std::string, std::string> const & headers)
 {
-	this->_headers = headers; 
-}
-
-void	Request::setMessageBody(std::string const & messageBody)
-{
-	this->_messageBody = messageBody;
+	_headers = headers; 
 }
 /******************************************************************************/
 
@@ -135,11 +132,11 @@ void	Request::setMessageBody(std::string const & messageBody)
 /// @brief 
 /// @param requestLine 
 /// @return 
-bool	Request::handleRequestLine(std::string requestLine)
+void	Request::handleRequestLine(std::string requestLine)
 {
 	std::vector<std::string> vec = StringUtils::splitString(requestLine, " ");
 	if (vec.size() != 3)
-		return false;
+		throw RequestError("Request line uncomplete");
 	_httpMethod = vec[0];
 	_pathRequest = vec[1];
 	_httpVersion = vec[2];
@@ -147,17 +144,16 @@ bool	Request::handleRequestLine(std::string requestLine)
 	size_t lastSlash = _pathRequest.rfind("/");
 	size_t query = _pathRequest.find("?");
 	size_t extension;
-	// TODO: Add DELETE POST
-	if (_httpMethod.compare("GET") != 0)
-		return false;
+
+	if (HttpUtils::isMethodAllowed(_httpMethod) == false)
+		throw RequestError("Http method not handle in this server");
+	if (_httpMethod.compare("POST") == 0)
+		_hasMessageBody = true;
 	if (_httpVersion.compare("HTTP/1.1") != 0)
-		return false;
+		throw RequestError("Bad http version");
 	if (_pathRequest[0] != '/')
-		return false;
-	// TODO: Add index to config file
-	if (_pathRequest.size() == 1)
-		_fileName = "index.html";
-	else if (query == std::string::npos)
+		throw RequestError("Path request must start with /");
+	if (query == std::string::npos)
 		_fileName = _pathRequest.substr(lastSlash + 1);
 	else
 	{
@@ -166,13 +162,12 @@ bool	Request::handleRequestLine(std::string requestLine)
 	}
 	if ((extension = _fileName.rfind(".")) != std::string::npos)
 		_extension = _fileName.substr(extension + 1);
-	return true;	
 }
 
 /// @brief 
 /// @param headers 
 /// @return 
-bool	Request::handleHeaders(std::string headers)
+void	Request::handleHeaders(std::string headers)
 {
 	std::vector<std::string> vec = StringUtils::splitString(headers, "\r\n");
 	std::vector<std::string>::iterator it = vec.begin();
@@ -186,31 +181,45 @@ bool	Request::handleHeaders(std::string headers)
 			continue;
 		std::string key = (*it).substr(0, sep);
 		std::string value = StringUtils::trimWhitespaces((*it).substr(sep + 1));
-
+		if (key == "Content-Length")
+			_encode = false;
+		if (key == "Transfer-Encoding")
+			_encode = true;
 		_headers[key] = value;
 	}
 	if (_headers.find("Host") == _headers.end())
-		return false;
-	return true;
+		throw RequestError("Missing Host header");
+	if (_httpMethod == "POST")
+	{
+		std::map<std::string, std::string>::iterator length = _headers.find("Content-Length");
+		std::map<std::string, std::string>::iterator encod = _headers.find("Transfer-Encoding");
+		if (length == _headers.end() && encod == _headers.end())
+			throw RequestError("Missing headers about message body");
+		if (_encode == false)
+			_bodySize = atoi(length->second.c_str()); // TODO: Check if size is an integer
+	}
+		
 }
 
 /// @brief 
 /// @param messageBody 
 /// @return 
-bool	Request::handleMessageBody(std::vector<unsigned char> messageBody)
+void	Request::handleMessageBody(std::vector<unsigned char> & rawData)
 {
-	(void) messageBody;
-	return true;
+	if (_encode == false)
+	{
+		_messageBody.insert(_messageBody.end(), rawData.begin(), rawData.end());
+		_bodySize -= rawData.size();
+		if (_bodySize > 0)
+			throw RequestUncomplete();
+	}
 }
-
-
-
 
 std::ostream    &operator<<(std::ostream & o, Request const & r)
 {
 	o << r.getHttpMethod() << " " << r.getPathRequest() << " " << r.getHttpVersion() << std::endl;
 	for (std::map<std::string, std::string>::const_iterator it = r.getHeaders().begin(); it != r.getHeaders().end(); it++)
 		o << it->first << ": " << it->second << std::endl; 
-	o << r.getMessageBody() << std::endl;
+	o << std::endl << r.getMessageBody() << std::endl;
 	return o;
 }
