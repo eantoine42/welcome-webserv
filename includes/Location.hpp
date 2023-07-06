@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/30 12:12:47 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/06 00:18:52 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ class Location
 		std::string							_upload_dir;
 		std::string							_return;
 		long int							_client_body_size;
-		std::string							_error_pages;
+		std::map<int, std::string>			_error_pages;
 		std::string							_uri;
 
 
@@ -90,7 +90,7 @@ class Location
 		std::string							const &getlocRoot() const;
 		std::string							const &getUploadDir() const;
 		long int							const &getClientBodySize() const;
-		std::string							const &getError() const;
+		std::map<int, std::string>			const &getError() const;
 		std::map<std::string, std::string>	const &getCgi() const;
 		
 		struct location_instruction_tab_entry_t 

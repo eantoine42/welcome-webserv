@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConf.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:12:31 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:17:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/06 01:42:18 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ class ServerConf
 		int									_port;
 		std::string							_server_name;
 		std::string							_IP;
-		std::string							_error_pages;
+		std::map<int, std::string>			_error_pages;
 		std::vector<std::string>			_index;
 		bool								_autoindex;
 		long int							_client_body_size;
@@ -82,7 +82,7 @@ class ServerConf
 		std::string					const &getRoot() const;
 		std::string					const &getName() const;
 		std::string					const &getIp() const;
-		std::string					const &getError() const;
+		std::map<int, std::string>	const &getError() const;
 		std::vector<std::string>	const &getIndex() const;
 		bool						const &getAutoindex() const;
 		long int					const &getClientBodySize() const;

@@ -98,7 +98,7 @@ std::string							const &Location::getlocRoot() const{return _locRoot;}
 std::string							const &Location::getUploadDir() const{return _upload_dir;}
 std::map<std::string, std::string>	const &Location::getCgi() const{return _cgi;}
 long int							const &Location::getClientBodySize() const{return (_client_body_size);}
-std::string							const &Location::getError() const{return (_error_pages);}
+std::map<int, std::string>			const &Location::getError() const{return (_error_pages);}
 
 void Location::setLocation(const std::string &str, int &count)
 {
@@ -223,6 +223,8 @@ void	Location::setlocRoot(std::vector<std::string> token)
 	if (token.size() > 2)
 		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) +"] : Only one root allowed"));
 	_locRoot = token[1].erase(token[1].size() - 1);
+	if (_locRoot.find_last_of("/") != _locRoot.length() - 1)
+		_locRoot += "/";
 }
 
 void Location::setUploadDir(std::vector<std::string> token)
@@ -242,7 +244,6 @@ void Location::setCgi(std::vector<std::string> token)
 }
 void Location::setErrorPages(std::vector<std::string> token)
 {
-
 	if (token.size() != 3)
 		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : problem with number of arguments for error_page"));
 	for (size_t i = 0; i < token[1].size(); i++)
@@ -250,7 +251,7 @@ void Location::setErrorPages(std::vector<std::string> token)
 			throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : error_page : fisrt argument must be numeric"));
 	if (atoi(token[1].c_str()) < 300 && atoi(token[1].c_str()) > 599)
 		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : error_page : fisrt argument must be between 300 and 599"));
-	_error_pages = token[1] + " " + token[2].erase(token[2].size() - 1);
+	_error_pages.insert(std::make_pair(atoi(token[1].c_str()),(token[2].erase(token[2].size() - 1))));
 }
 void Location::setClientBodySize(std::vector<std::string> token)
 {
@@ -335,6 +336,10 @@ std::ostream &operator<<(std::ostream &o, Location const &i)
 	if (i.getClientBodySize() > 0)
 		o << "    clientMaxBodySize		=	[" << i.getClientBodySize() << "]" << std::endl;
 	if (i.getError().empty() == false)
-		o << "    errorPage			=	[" << i.getError() << "]" << std::endl;
+	{
+		std::map<int, std::string>::const_iterator ite;
+		for (ite = i.getError().begin(); ite != i.getError().end(); ite++)
+		o << "    errorPage			=	[" << ite->first<<";"<<ite->second << "]" << std::endl;
+	}
 	return (o);
 };

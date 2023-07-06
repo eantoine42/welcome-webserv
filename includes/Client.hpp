@@ -34,14 +34,20 @@ class Client : public AFileDescriptor
 
 		Client(void);
 
-		void		searchRequestLine();
-		void		searchHeaders();
-		ServerConf	getCorrectServer();
-		void		handleException(std::exception & exception);
-		int			pathIsValid(std::string const path);
+
+		void			searchRequestLine();
+		void			searchHeaders();
+		ServerConf		getCorrectServer();
+		void			handleException(std::exception & exception);
+		int				pathIsValid(std::string const path);
+		std::string 	setPathRequest();
+		bool			fileExist();
+		bool			validFolder();
+		std::string 	getIndex();
+		std::vector<Location>::const_iterator 	findLongestMatch();
+		void	errorResponse(status_code_t status, std::string errorFile);
 
 	public:
-		
 		Client(Client const & copy);
 		Client & operator=(Client const & rhs);
 		virtual ~Client();

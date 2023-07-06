@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 21:08:26 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/10 22:48:15 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,10 +63,10 @@ class Request
 		void	setHeaders(std::map<std::string, std::string> const & headers);
 
 		// Members methods
+
 		void	handleRequestLine(std::string requestLine);
 		void	handleHeaders(std::string headers);
 		void	handleMessageBody(std::vector<unsigned char> & rawData);
-
 };
 
 std::ostream    &operator<<(std::ostream & o, Request const & r);

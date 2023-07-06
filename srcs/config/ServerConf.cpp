@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConf.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:28:13 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/06 01:45:05 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,7 +108,7 @@ std::string const &ServerConf::getName() const { return (_server_name); }
 std::vector<std::string> const &ServerConf::getIndex() const { return (_index); }
 bool const &ServerConf::getAutoindex() const { return (_autoindex); }
 std::string const &ServerConf::getIp() const { return (_IP); }
-std::string const &ServerConf::getError() const { return (_error_pages); }
+std::map<int, std::string> const &ServerConf::getError() const { return (_error_pages); }
 long int const &ServerConf::getClientBodySize() const { return (_client_body_size); }
 std::vector<Location> const &ServerConf::getLocation() const { return (_location); }
 
@@ -117,6 +117,8 @@ void ServerConf::setRoot(std::vector<std::string> token)
 	if (token.size() > 2)
 		throw(ConfFileParseError("Only one root allowed"));
 	_root = token[1].erase(token[1].size() - 1);
+	if (_root.find_last_of("/") != _root.length() - 1)
+		_root += "/";
 }
 
 void ServerConf::setCgi(std::vector<std::string> token)
@@ -201,7 +203,8 @@ void ServerConf::setError(std::vector<std::string> token)
 			throw(ConfFileParseError("error_page : fisrt argument must be numeric"));
 	if (atoi(token[1].c_str()) < 300 && atoi(token[1].c_str()) > 599)
 		throw(ConfFileParseError("error_page : fisrt argument must be between 300 and 599"));
-	_error_pages = token[1] + " " + token[2].erase(token[2].size() - 1);
+	_error_pages.insert(std::make_pair(atoi(token[1].c_str()),(token[2].erase(token[2].size() - 1))));
+	
 }
 
 void ServerConf::setIndex(std::vector<std::string> token)
@@ -482,8 +485,11 @@ std::ostream &operator<<(std::ostream &o, ServerConf const &i)
 		o << "    indexPage			=	[" << i.getIndex() << "]" << std::endl;
 	}
 	o << "    autoindex			=	[" << i.getAutoindex() << "]" << std::endl;
-	if (i.getError().empty() == false)
-		o << "    errorPage			=	[" << i.getError() << "]" << std::endl;
+	if (i.getError().empty() == false){
+		std::map<int, std::string>::const_iterator ite;
+		for (ite = i.getError().begin(); ite != i.getError().end(); ite++)
+		o << "    errorPage			=	[" << ite->first<<";"<<ite->second << "]" << std::endl;
+	}
 	if (i.getCgi().empty() == false)
 	{
 		std::map<std::string, std::string>::const_iterator ite;

@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/10 19:40:06 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/10 22:48:35 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "StringUtils.hpp"
 #include "FileUtils.hpp"
 #include "Response.hpp"
+#include "Location.hpp"
 #include "Exception.hpp"
 #include "WebServ.hpp"
 #include "FileUtils.hpp"
@@ -228,7 +229,21 @@ void	Client::searchHeaders()
 
 void	Client::errorResponse(status_code_t status)
 {
-	//TODO: Find error file 
+	//TODO: Find error file from server
+	std::string extension = "html";
+
+	std::string error = "<html>\n<head><title>" + StringUtils::intToString(status) + " " + HttpUtils::RESPONSE_STATUS.at(status) + "</title></head>\n<body>\n<center><h1>" + StringUtils::intToString(status) + HttpUtils::RESPONSE_STATUS.at(status) + "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
+	std::vector<unsigned char> body = std::vector<unsigned char>(error.begin(), error.end());
+
+	resp_t resp = {status, body, extension, _rawData, false};
+	Response::createResponse(resp);
+	_responseReady = true;
+}
+
+void	Client::errorResponse(status_code_t status, std::string errorFile)
+{
+	//TODO: has error file from location
+	(void) errorFile;
 	std::string extension = "html";
 
 	std::string error = "<html>\n<head><title>" + StringUtils::intToString(status) + " " + HttpUtils::RESPONSE_STATUS.at(status) + "</title></head>\n<body>\n<center><h1>" + StringUtils::intToString(status) + HttpUtils::RESPONSE_STATUS.at(status) + "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
@@ -241,24 +256,11 @@ void	Client::errorResponse(status_code_t status)
 
 void	Client::getResponse()
 {
-	//TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
+	std::string filename;
+	filename = setPathRequest();
 	std::cout << _request;
 	//TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND)
-
-	//TOdo
-	//construire le request path
-	int Valid = pathIsValid(_request.getPathRequest());
-	if (!Valid)
-	{
-		errorResponse(NOT_FOUND);
-	}
-	else if (Valid == 2)
-	{
-	//if directory and autoindex is on use autoindex to generate answer
-	}
-
 	std::vector<unsigned char> body;
-    std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
     std::ifstream is (filename.c_str(), std::ifstream::binary);
 
     if (is.good()) {
@@ -325,4 +327,86 @@ int		Client::pathIsValid(std::string const path)
 	else
 		return 1;
 	
+}
+
+std::string 	Client::setPathRequest()
+{
+	std::string answer;
+	std::vector<Location>::const_iterator locIt = findLongestMatch();
+	if (locIt != _serverInfoCurr.getLocation().end())
+	{
+		if (validFolder())
+		{
+			std::vector<std::string>::const_iterator indexIt = locIt->getIndex().begin();
+			//parcours les index du bloc location
+			for (; indexIt !=locIt->getIndex().end(); indexIt++)
+			{
+				if (pathIsValid((_serverInfoCurr.getRoot() + _request.getPathRequest() + *indexIt)))
+					return ((_serverInfoCurr.getRoot() + _request.getPathRequest() + *indexIt));//si index existe renvoie le chemin root included
+			}
+			//comme le folder est valide, renvoie le chemin avec le folder
+			return (_serverInfoCurr.getRoot() + _request.getPathRequest());
+		}
+		//teste le chemin avec fichier voir si le fichier existe
+		else if (pathIsValid(_serverInfoCurr.getRoot() + _request.getPathRequest()))
+			return (_serverInfoCurr.getRoot() + _request.getPathRequest());
+		else {
+			answer +=_serverInfoCurr.getRoot();
+			answer += _request.getPathRequest().substr(0, _request.getPathRequest().size() - _request.getFileName().size());
+			answer += (locIt->getError()).at(NOT_FOUND);//leve une exception si pas trouve
+			if (pathIsValid(answer)){
+				errorResponse(NOT_FOUND, answer);
+			}
+			else 
+				errorResponse(NOT_FOUND);//TODO gestion erreurs a revoir
+		}
+	}
+	else{
+			if (validFolder())
+				return (_serverInfoCurr.getRoot() + _request.getPathRequest());
+		else if (pathIsValid(_serverInfoCurr.getRoot() + _request.getPathRequest()))
+			return (_serverInfoCurr.getRoot() + _request.getPathRequest());
+		else {
+			answer +=_serverInfoCurr.getRoot();
+			answer += _request.getPathRequest().substr(0, _request.getPathRequest().size() - _request.getFileName().size());
+			answer += (_serverInfoCurr.getError()).at(NOT_FOUND);//leve une exception si pas trouve
+			if (pathIsValid(answer)){
+				errorResponse(NOT_FOUND, answer);
+			}
+			else 
+				errorResponse(NOT_FOUND);//TODO gestion erreurs a revoir
+		}
+	}
+	return ("");
+}
+
+std::vector<Location>::const_iterator Client::findLongestMatch()
+{
+	std::vector<Location>::const_iterator it;
+	std::string substring =  _request.getPathRequest();
+	std::size_t lastIndex = substring.find_last_of('/');
+	if (lastIndex != std::string::npos) {
+        substring = substring.substr(0, lastIndex);
+    }
+	while (lastIndex > 1 && lastIndex != std::string::npos)
+	{
+		it = _serverInfoCurr.getLocation().begin();
+		for (;it !=_serverInfoCurr.getLocation().end(); it++){
+       		if (!it->getlocRoot().compare(substring))
+				return(it);
+		}
+		lastIndex = substring.erase(substring.length(), 1).find_last_of('/');
+		if (lastIndex != std::string::npos) {
+       		substring = substring.substr(0, lastIndex);
+    	}
+	}
+	return (_serverInfoCurr.getLocation().end());
+}
+
+bool Client::validFolder()
+{
+	if (FileUtils::isDirectory((_serverInfoCurr.getRoot() + _request.getPathRequest()).c_str()))
+		return (true);
+	else
+		return (false);
 }
