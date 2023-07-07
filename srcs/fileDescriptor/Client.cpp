@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/10 22:48:35 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/10 22:49:08 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -386,7 +386,7 @@ std::vector<Location>::const_iterator Client::findLongestMatch()
 	std::string substring =  _request.getPathRequest();
 	std::size_t lastIndex = substring.find_last_of('/');
 	if (lastIndex != std::string::npos) {
-        substring = substring.substr(0, lastIndex);
+        substring = substring.substr(0, lastIndex + 1 );
     }
 	while (lastIndex > 1 && lastIndex != std::string::npos)
 	{
@@ -397,7 +397,7 @@ std::vector<Location>::const_iterator Client::findLongestMatch()
 		}
 		lastIndex = substring.erase(substring.length(), 1).find_last_of('/');
 		if (lastIndex != std::string::npos) {
-       		substring = substring.substr(0, lastIndex);
+       		substring = substring.substr(0, lastIndex + 1);
     	}
 	}
 	return (_serverInfoCurr.getLocation().end());

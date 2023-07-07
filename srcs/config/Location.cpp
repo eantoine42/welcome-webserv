@@ -106,7 +106,7 @@ void Location::setLocation(const std::string &str, int &count)
 	std::string line = StringUtils::getLine(str, count);
 	std::vector<std::string> token;
 	token = StringUtils::splitString(line, WHITESPACES);
-	setUri(token);
+	this->setlocRoot(token);
 	count++;
 	if (StringUtils::getLine(str, count).compare("{"))
 		throw(ConfFileParseError("Invalid Location directive : no opening {"));
