@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/10 22:49:08 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/10 22:49:37 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -274,7 +274,7 @@ void	Client::getResponse()
         is.close();
 		delete [] buffer;
 
-		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
+		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};//plante si pas d'extension, ie c'est un dossier a gerer avec autoindex
 		Response::createResponse(resp);
 		_responseReady = true;
 	}
@@ -332,20 +332,25 @@ int		Client::pathIsValid(std::string const path)
 std::string 	Client::setPathRequest()
 {
 	std::string answer;
+	std::string rootPathRelative;
 	std::vector<Location>::const_iterator locIt = findLongestMatch();
 	if (locIt != _serverInfoCurr.getLocation().end())
 	{
-		if (validFolder())
+		if (locIt->getlocRoot().c_str()[0]== '/')
+			rootPathRelative = _serverInfoCurr.getRoot();
+		else
+			rootPathRelative = "";
+		if (validFolder(rootPathRelative))
 		{
 			std::vector<std::string>::const_iterator indexIt = locIt->getIndex().begin();
 			//parcours les index du bloc location
 			for (; indexIt !=locIt->getIndex().end(); indexIt++)
 			{
-				if (pathIsValid((_serverInfoCurr.getRoot() + _request.getPathRequest() + *indexIt)))
-					return ((_serverInfoCurr.getRoot() + _request.getPathRequest() + *indexIt));//si index existe renvoie le chemin root included
+				if (pathIsValid((rootPathRelative + _request.getPathRequest() + *indexIt)))
+					return ((rootPathRelative + _request.getPathRequest() + *indexIt));//si index existe renvoie le chemin root included
 			}
 			//comme le folder est valide, renvoie le chemin avec le folder
-			return (_serverInfoCurr.getRoot() + _request.getPathRequest());
+			return (rootPathRelative + _request.getPathRequest());
 		}
 		//teste le chemin avec fichier voir si le fichier existe
 		else if (pathIsValid(_serverInfoCurr.getRoot() + _request.getPathRequest()))
@@ -362,8 +367,8 @@ std::string 	Client::setPathRequest()
 		}
 	}
 	else{
-			if (validFolder())
-				return (_serverInfoCurr.getRoot() + _request.getPathRequest());
+		if (validFolder(_serverInfoCurr.getRoot()))
+			return (_serverInfoCurr.getRoot() + _request.getPathRequest());
 		else if (pathIsValid(_serverInfoCurr.getRoot() + _request.getPathRequest()))
 			return (_serverInfoCurr.getRoot() + _request.getPathRequest());
 		else {
@@ -403,10 +408,10 @@ std::vector<Location>::const_iterator Client::findLongestMatch()
 	return (_serverInfoCurr.getLocation().end());
 }
 
-bool Client::validFolder()
+bool Client::validFolder(std::string rootPath)
 {
-	if (FileUtils::isDirectory((_serverInfoCurr.getRoot() + _request.getPathRequest()).c_str()))
-		return (true);
-	else
-		return (false);
+	if (FileUtils::isDirectory((rootPath + _request.getPathRequest()).c_str()))
+			return (true);
+		else
+			return (false);
 }

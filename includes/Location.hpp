@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/06 00:18:52 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/10 18:43:06 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,8 @@ class Location
 		Location &operator=(const Location &copy);
 		~Location();
 
-		Location(int port, int loc_index, std::map<std::string, std::string>	cgi, bool autoindex, std::vector<std::string> index, std::string root, int client_body_size);
+		Location(int port, int loc_index, std::map<std::string, std::string>	cgi, bool autoindex, std::vector<std::string> index, 
+			std::string root, int client_body_size, std::map<int, std::string> error_pages);
 
 		void	setLocation(const std::string &str,  int &count);
 		void	parseLocation(std::string &line);

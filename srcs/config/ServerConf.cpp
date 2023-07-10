@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/06 01:45:05 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/10 18:44:51 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -344,7 +344,7 @@ void ServerConf::setServerConf(const std::string &str)
  */
 void ServerConf::addLocation(std::string str, int &count, int &Server_ct)
 {
-	Location loc(getPort(), Server_ct, getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize());
+	Location loc(getPort(), Server_ct, getCgi(), getAutoindex(), getIndex(), getRoot(), getClientBodySize(), getError());
 	loc.setLocation(str, count);
 	this->_location.push_back(loc);
 }

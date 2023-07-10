@@ -42,7 +42,7 @@ class Client : public AFileDescriptor
 		int				pathIsValid(std::string const path);
 		std::string 	setPathRequest();
 		bool			fileExist();
-		bool			validFolder();
+		bool			validFolder(std::string rootPath);
 		std::string 	getIndex();
 		std::vector<Location>::const_iterator 	findLongestMatch();
 		void	errorResponse(status_code_t status, std::string errorFile);

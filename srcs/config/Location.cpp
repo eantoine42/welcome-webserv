@@ -26,14 +26,16 @@ const Location::location_instruction_tab_entry_t	Location::LOCATION_INSTRUCTIONS
 
 /******************************************************************************/
 
-Location::Location(int port, int loc_index, std::map<std::string, std::string> cgi, bool autoindex, std::vector<std::string> index, std::string root, int client_body_size)
+Location::Location(int port, int loc_index, std::map<std::string, std::string> cgi, bool autoindex,
+	 std::vector<std::string> index, std::string root, int client_body_size, std::map<int, std::string>	error_pages)
 	: _port(port),
 	  _loc_index(loc_index),
 	  _locRoot(root),
 	  _index(index),
 	  _cgi(cgi),
 	  _autoindex(autoindex),
-	  _client_body_size(client_body_size)
+	  _client_body_size(client_body_size),
+	  _error_pages(error_pages)
 {
 	_allow_method.push_back("POST");
 	_allow_method.push_back("GET");
