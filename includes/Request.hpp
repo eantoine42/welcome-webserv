@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/10 22:48:15 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/16 12:11:19 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,7 @@ class Request
 		void	setPathRequest(std::string const & pathRequest);
 		void	setHttpVersion(std::string const & httpVersion);
 		void	setHeaders(std::map<std::string, std::string> const & headers);
+		void	setExtension(std::string const &ext);
 
 		// Members methods
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 21:37:00 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/16 12:12:06 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,6 +122,10 @@ void	Request::setHttpVersion(std::string const & httpVersion)
 void	Request::setHeaders(std::map<std::string, std::string> const & headers)
 {
 	_headers = headers; 
+}
+void	Request::setExtension(std::string const &ext)
+{
+	_extension = ext;
 }
 /******************************************************************************/
 

@@ -241,4 +241,13 @@ class RequestUncomplete : public std::exception
 		}
 };
 
+class FileNotFound : public std::exception
+{
+	public:
+		char const	*what() const throw()
+		{
+			return "File not found";
+		}
+};
+
 #endif

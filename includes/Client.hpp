@@ -43,9 +43,10 @@ class Client : public AFileDescriptor
 		std::string 	setPathRequest();
 		bool			fileExist();
 		bool			validFolder(std::string rootPath);
+		static bool			validFolder2(std::string rootPath);
 		std::string 	getIndex();
 		std::vector<Location>::const_iterator 	findLongestMatch();
-		void	errorResponse(status_code_t status, std::string errorFile);
+		void			errorResponse(status_code_t status, std::string errorFile);
 
 	public:
 		Client(Client const & copy);
@@ -65,7 +66,7 @@ class Client : public AFileDescriptor
 		virtual void doOnError(WebServ & webServ, uint32_t event);
 
 		void	errorResponse(status_code_t status);
-		void	getResponse();
+		void	getResponse(std::string filename);
 		void	responseCgi(std::string const & response);
 };
 
