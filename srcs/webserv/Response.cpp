@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 22:16:57 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/16 21:12:13 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,4 +73,15 @@ void    Response::createResponse(resp_t resp)
         resp.rawData.assign(response.begin(), response.end());
         resp.rawData.insert(resp.rawData.end(), resp.body.begin(), resp.body.end());
     }
+}
+
+std::string     Response::errorResponse(status_code_t code) 
+{
+	std::string error = "<html>\n<head><title>" + StringUtils::intToString(code);
+    error += " " + HttpUtils::RESPONSE_STATUS.at(code);
+    error += "</title></head>\n<body>\n<center><h1>";
+    error += StringUtils::intToString(code);
+    error += " " + HttpUtils::RESPONSE_STATUS.at(code);
+    error += "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
+    return error;
 }

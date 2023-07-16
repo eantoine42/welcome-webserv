@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 21:33:17 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/16 21:11:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,41 +102,39 @@ void Client::doOnRead(WebServ &webServ)
 {
 	char buffer[BUFFER_SIZE];
 	ssize_t n;
-	std::vector<unsigned char>::iterator it;
 
 	if ((n = recv(_fd, buffer, BUFFER_SIZE, 0)) > 0)
 		_rawData.assign(buffer, buffer + n);
 
 	if (n < 0) // Try to read next time fd is NON_BLOCK and we can't check errno
 		return;
-	if (n == 0) // Client close connection
-	{
+	else if (n == 0) // Client close connection
 		webServ.removeFd(_fd);
-		return;
-	}
+	else
+	{
+		try
+		{
+			if (_request.getHttpMethod().empty())
+				searchRequestLine();
+			if (_request.getHeaders().empty())
+				searchHeaders();
+			if (_request.hasMessageBody())
+				_request.handleMessageBody(_rawData);
+		}
+		catch (RequestUncomplete &exception)
+		{
+			return;
+		}
+		catch (std::exception &exception)
+		{
+			handleException(exception);
+			webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+			return;
+		}
 
-	try 
-	{
-		if (_request.getHttpMethod().empty())
-			searchRequestLine();
-		if (_request.getHeaders().empty())
-			searchHeaders();
-		if (_request.hasMessageBody())
-			_request.handleMessageBody(_rawData);
-	}
-	catch (RequestUncomplete & exception)
-	{
-		return ;
-	}
-	catch (std::exception & exception)
-	{
-		handleException(exception);
+		_serverInfoCurr = getCorrectServer();
 		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
-		return ;
 	}
-
-	_serverInfoCurr = getCorrectServer(); 
-	webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
 
 /// @brief
@@ -167,6 +165,8 @@ void Client::doOnWrite(WebServ &webServ)
 	else
 	{
 		getResponse();
+		// postResponse();
+		// deleteResponse();
 		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 }
@@ -186,15 +186,13 @@ void Client::responseCgi(std::string const &response)
 	_rawData.assign(response.begin(), response.end());
 }
 
-
-
 /******************************************************************************/
 
 /*****************
  * PRIVATE METHODS
  *****************/
 
-void	Client::searchRequestLine()
+void Client::searchRequestLine()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n'};
@@ -206,7 +204,7 @@ void	Client::searchRequestLine()
 	_rawData.erase(_rawData.begin(), it);
 }
 
-void	Client::searchHeaders()
+void Client::searchHeaders()
 {
 	std::vector<unsigned char>::iterator it;
 	unsigned char src[] = {'\r', '\n', '\r', '\n'};
@@ -218,12 +216,12 @@ void	Client::searchHeaders()
 	_rawData.erase(_rawData.begin(), it + 4);
 }
 
-void	Client::errorResponse(status_code_t status)
+void Client::errorResponse(status_code_t status)
 {
-	//TODO: Find error file 
+	// TODO: Find error file
 	std::string extension = "html";
 
-	std::string error = "<html>\n<head><title>" + StringUtils::intToString(status) + " " + HttpUtils::RESPONSE_STATUS.at(status) + "</title></head>\n<body>\n<center><h1>" + StringUtils::intToString(status) + HttpUtils::RESPONSE_STATUS.at(status) + "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
+	std::string error = Response::errorResponse(status); 
 	std::vector<unsigned char> body = std::vector<unsigned char>(error.begin(), error.end());
 
 	resp_t resp = {status, body, extension, _rawData, false};
@@ -231,24 +229,25 @@ void	Client::errorResponse(status_code_t status)
 	_responseReady = true;
 }
 
-void	Client::getResponse()
+void Client::getResponse()
 {
-	//TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
+	// TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
 	std::cout << _request;
 
 	std::vector<unsigned char> body;
-    std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
-    std::ifstream is (filename.c_str(), std::ifstream::binary);
+	std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
+	std::ifstream is(filename.c_str(), std::ifstream::binary);
 
-    if (is.good()) {
-        is.seekg (0, is.end);
-        int length = is.tellg();
-        is.seekg (0, is.beg);
+	if (is.good())
+	{
+		is.seekg(0, is.end);
+		int length = is.tellg();
+		is.seekg(0, is.beg);
 
-        char * buffer = new char [length];
-        is.read (buffer,length);
-		body = std::vector<unsigned char>(buffer, buffer+length);
-        is.close();
+		char *buffer = new char[length];
+		is.read(buffer, length);
+		body = std::vector<unsigned char>(buffer, buffer + length);
+		is.close();
 		delete buffer;
 
 		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
@@ -264,13 +263,13 @@ void	Client::getResponse()
 ServerConf Client::getCorrectServer()
 {
 	std::vector<ServerConf>::iterator it = _serverInfo.begin();
-	for (; it !=_serverInfo.end(); it++)
+	for (; it != _serverInfo.end(); it++)
 	{
 		if (_request.getHeaders().find("Host")->second == it->getName())
 			return (*it);
 	}
 	it = _serverInfo.begin();
-	for (; it !=_serverInfo.end(); it++)
+	for (; it != _serverInfo.end(); it++)
 	{
 		std::vector<Location>::const_iterator it1 = it->getLocation().begin();
 		for (; it1 != it->getLocation().end(); it1++)
@@ -278,17 +277,17 @@ ServerConf Client::getCorrectServer()
 				return (*it);
 	}
 	return (*(_serverInfo.begin()));
-
 }
 
-void	Client::handleException(std::exception & exception)
+void Client::handleException(std::exception &exception)
 {
 	DEBUG_COUT(exception.what());
 	try
-	{ 
+	{
 		dynamic_cast<RequestError &>(exception);
 		errorResponse(BAD_REQUEST);
-	} catch (std::exception & exception)
+	}
+	catch (std::exception &exception)
 	{
 		errorResponse(INTERNAL_SERVER_ERROR);
 	}
