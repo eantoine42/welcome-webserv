@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 16:56:34 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/18 14:30:03 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,9 +66,9 @@ WebServ::~WebServ()
 
 /// @brief 
 /// @param fileDescriptor 
-void    WebServ::addFd(AFileDescriptor * fileDescriptor)
+void    WebServ::addFd(int fd, AFileDescriptor * fileDescriptor)
 {
-    _mapFd[fileDescriptor->getFd()] = fileDescriptor;
+    _mapFd[fd] = fileDescriptor;
 }
 
 /// @brief 
@@ -155,6 +155,11 @@ void	WebServ::removeFd(int fd)
 			break;
 		}
 	}
+}
+
+void	WebServ::eraseFd(int fd)
+{
+	_mapFd.erase(fd);
 }
 /******************************************************************************/
 

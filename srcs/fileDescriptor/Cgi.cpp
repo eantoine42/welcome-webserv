@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/25 22:31:40 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/18 15:16:12 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,126 +17,105 @@
 #include "WebServ.hpp"
 
 #include <algorithm> // replace
-#include <cstring> // toupper
-#include <unistd.h> // pipe, read
+#include <cstring>   // toupper
+#include <unistd.h>  // pipe, read
 #include <errno.h>
 #include <sys/fcntl.h>
 
 /*****************
-* CANNONICAL FORM
-*****************/
+ * CANNONICAL FORM
+ *****************/
 
 Cgi::Cgi(void) : AFileDescriptor(), _socketInfo(NULL)
-{}
-
-Cgi::Cgi(Cgi const & copy)
-	:	AFileDescriptor(copy),
-        _rawData(copy._rawData),
-        _socketInfo(copy._socketInfo),
-        _fdRead(copy._fdRead),
-        _fdWrite(copy._fdWrite)
-{}
-
-Cgi & Cgi::operator=(Cgi const & rhs)
 {
-	if (this != &rhs)
-	{
-		_fd = rhs._fd;
+}
+
+Cgi::Cgi(Cgi const &copy)
+    : AFileDescriptor(copy),
+      _rawData(copy._rawData),
+      _socketInfo(copy._socketInfo),
+      _fdRead(copy._fdRead),
+      _fdWrite(copy._fdWrite)
+{
+}
+
+Cgi &Cgi::operator=(Cgi const &rhs)
+{
+    if (this != &rhs)
+    {
+        _fd = rhs._fd;
         _rawData = rhs._rawData;
-		_socketInfo = rhs._socketInfo;
+        _socketInfo = rhs._socketInfo;
         _fdRead = rhs._fdRead;
         _fdWrite = rhs._fdWrite;
-	}
+    }
 
-	return (*this);
+    return (*this);
 }
 
 Cgi::~Cgi()
-{}
+{
+}
 /******************************************************************************/
 
 /**************
-* CONSTRUCTORS
-***************/
-Cgi::Cgi(Client & socketFd) : AFileDescriptor(), _socketInfo(&socketFd)
-{}
+ * CONSTRUCTORS
+ ***************/
+Cgi::Cgi(Client &socketFd) : AFileDescriptor(), _socketInfo(&socketFd)
+{
+}
 /******************************************************************************/
 
 /***********
-* ACCESSORS
-************/
+ * ACCESSORS
+ ************/
 
-int     Cgi::getReadFd() const
+int Cgi::getReadFd() const
 {
     return _fdRead;
+}
+
+int Cgi::getWriteFd() const
+{
+    return _fdWrite;
 }
 /******************************************************************************/
 
 /****************
-* PUBLIC METHODS
-****************/
-int     Cgi::run()
+ * PUBLIC METHODS
+ ****************/
+int Cgi::run()
 {
     int pipeToCgi[2];
     int pipeFromCgi[2];
     int pid;
 
-    if ((pid = initPipe(pipeToCgi, pipeFromCgi)) < 0)
+    if ((pid = initChildProcess(pipeToCgi, pipeFromCgi)) < 0)
         return (-1);
 
     if (pid == 0)
-    {
-        std::string cgiPath = _socketInfo->getServerInfo().getCgi().find("php")->second;
-        char * cgiPathCopy = new char[cgiPath.size() + 1];
-        strcpy(cgiPathCopy, cgiPath.c_str());
-
-        std::string script = _socketInfo->getRequest().getFileName();
-        char * scriptCopy = new char[script.size() + 1];
-        strcpy(scriptCopy, script.c_str());
-
-        char ** argv = new char* [3];
-        argv[0] = cgiPathCopy;
-        argv[1] = scriptCopy;
-        argv[2] = NULL;
-
-        char ** envCgi = mapCgiParams();
-        
-        //TODO: MAP FD
-        close(pipeToCgi[1]);
-        close(pipeFromCgi[0]);
-        dup2(pipeToCgi[0], STDIN_FILENO);
-        dup2(pipeFromCgi[1], STDOUT_FILENO);
-
-        execve(argv[0], argv, envCgi);
-
-        delete [] cgiPathCopy;
-        delete [] scriptCopy;
-        delete [] argv;
-        close(pipeFromCgi[0]);
-        close(pipeFromCgi[1]);
-        close(pipeToCgi[0]);
-        close(pipeToCgi[1]);
-        exit(EXIT_FAILURE);
-    }
+        runChildProcess(pipeToCgi, pipeFromCgi);
     
+
     close(pipeFromCgi[1]);
     close(pipeToCgi[0]);
     _fdRead = pipeFromCgi[0];
     _fdWrite = pipeToCgi[1];
-    close(_fdWrite);
     if (fcntl(_fdRead, F_SETFL, O_NONBLOCK) < 0)
-	{
-		std::cerr << "Fcntl error" << std::endl;
-		return -1;
-	}
+    {
+        std::cerr << "Fcntl error" << std::endl;
+        return -1;
+    }
     _fd = _fdRead;
     return (0);
 }
 
-/// @brief 
-/// @param epoll 
-void    Cgi::doOnRead(WebServ & webServ)
+/// @brief
+/// @param epoll
+void Cgi::doOnRead(WebServ &webServ)
 {
+    webServ.eraseFd(_fdWrite);
+
     unsigned char buffer[BUFFER_SIZE];
     ssize_t n;
     size_t start;
@@ -151,38 +130,40 @@ void    Cgi::doOnRead(WebServ & webServ)
         str = Response::cgiSimpleResponse(str);
         _socketInfo->responseCgi(str);
         close(_fdRead);
-        webServ.removeFd(_fdRead);
+  //      webServ.removeFd(_fdRead);
+        //webServ.updateEpoll(_fdRead, 0, EPOLL_CTL_MOD);
         webServ.updateEpoll(_socketInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
     }
 }
 
-/// @brief 
-void    Cgi::doOnWrite(WebServ & webServ)
+/// @brief
+void Cgi::doOnWrite(WebServ &webServ)
 {
-    (void) webServ;
+    close(_fdWrite);
+    webServ.updateEpoll(_fdRead, EPOLLIN, EPOLL_CTL_MOD);
 }
 
-/// @brief 
-/// @param mapFd 
-/// @param event 
-void	Cgi::doOnError(WebServ & webServ, uint32_t event)
+/// @brief
+/// @param mapFd
+/// @param event
+void Cgi::doOnError(WebServ &webServ, uint32_t event)
 {
-	std::cout << "Client on error, event = " << event << std::endl;
+    std::cout << "Client on error, event = " << event << std::endl;
     this->doOnRead(webServ);
 }
 /******************************************************************************/
 
 /*****************
-* PRIVATE METHODS
-*****************/
+ * PRIVATE METHODS
+ *****************/
 
-char **    Cgi::mapCgiParams()
+char **Cgi::mapCgiParams()
 {
-    ServerConf const &  serverInfo = _socketInfo->getServerInfo();
-    Request const & request = _socketInfo->getRequest();
-    std::map<std::string, std::string> const & headers = request.getHeaders();
-    char * cwd = get_current_dir_name();
-    
+    ServerConf const &serverInfo = _socketInfo->getServerInfo();
+    Request const &request = _socketInfo->getRequest();
+    std::map<std::string, std::string> const &headers = request.getHeaders();
+    char *cwd = get_current_dir_name();
+
     std::string tab[19] = {
         std::string("AUTH_TYPE=") + "",
         std::string("CONTENT_LENGTH=") + (headers.find("CONTENT_LENGTH") != headers.end() ? headers.find("CONTENT_LENGTH")->second : ""),
@@ -191,7 +172,7 @@ char **    Cgi::mapCgiParams()
         std::string("PATH_INFO=/"),
         std::string("PATH_TRANSLATED="),
         std::string("QUERY_STRING=") + request.getQueryParam(), // Set query string in request object
-        std::string("REMOTE_ADDR="), // Set remote addr in request object
+        std::string("REMOTE_ADDR="),                            // Set remote addr in request object
         std::string("REMOTE_HOST="),
         std::string("REMOTE_IDENT="),
         std::string("REMOTE_USER="),
@@ -200,16 +181,16 @@ char **    Cgi::mapCgiParams()
         std::string("PHP_SELF=") + request.getFileName(),
         std::string("SCRIPT_FILENAME=") + cwd + "/" + request.getFileName(),
         std::string("SERVER_NAME=") + serverInfo.getName(), // Get to header host ?
-        std::string("SERVER_PORT=4242"), // TODO USE ITOA
+        std::string("SERVER_PORT=4242"),                    // TODO USE ITOA
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),
-        //std::string("REQUEST_URI=") + request.getPathRequest()
+        // std::string("REQUEST_URI=") + request.getPathRequest()
     };
 
     free(cwd);
 
-    char ** env = new char* [headers.size() + 19 + 1];
-    char * var = NULL;
+    char **env = new char *[headers.size() + 19 + 1];
+    char *var = NULL;
     int i = 0;
 
     while (i < 19)
@@ -236,7 +217,7 @@ char **    Cgi::mapCgiParams()
     return (env);
 }
 
-int    Cgi::initPipe(int toCgi[2], int fromCgi[2])
+int Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
 {
     int pid;
 
@@ -264,3 +245,37 @@ int    Cgi::initPipe(int toCgi[2], int fromCgi[2])
     return (pid);
 }
 
+void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
+{
+    std::string cgiPath = _socketInfo->getServerInfo().getCgi().find("php")->second;
+    char *cgiPathCopy = new char[cgiPath.size() + 1];
+    strcpy(cgiPathCopy, cgiPath.c_str());
+
+    std::string script = _socketInfo->getRequest().getFileName();
+    char *scriptCopy = new char[script.size() + 1];
+    strcpy(scriptCopy, script.c_str());
+
+    char **argv = new char *[3];
+    argv[0] = cgiPathCopy;
+    argv[1] = scriptCopy;
+    argv[2] = NULL;
+
+    char **envCgi = mapCgiParams();
+
+    // TODO: MAP FD
+    close(pipeToCgi[1]);
+    close(pipeFromCgi[0]);
+    dup2(pipeToCgi[0], STDIN_FILENO);
+    dup2(pipeFromCgi[1], STDOUT_FILENO);
+
+    execve(argv[0], argv, envCgi);
+
+    delete[] cgiPathCopy;
+    delete[] scriptCopy;
+    delete[] argv;
+    close(pipeFromCgi[0]);
+    close(pipeFromCgi[1]);
+    close(pipeToCgi[0]);
+    close(pipeToCgi[1]);
+    exit(EXIT_FAILURE);
+}

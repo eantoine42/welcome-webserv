@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 22:19:17 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/18 12:09:12 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ void	Server::doOnRead(WebServ & webServ)
 		throw e;
 	}
 
-	webServ.addFd(new Client(cs, _serverConfs));
+	webServ.addFd(cs, new Client(cs, _serverConfs));
 	webServ.addClientTimes(std::make_pair(cs, TimeUtils::getTimeOfDayMs()));
 }
 
