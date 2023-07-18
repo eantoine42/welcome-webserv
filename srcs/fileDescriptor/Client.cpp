@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 15:16:18 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/18 18:55:11 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,8 +96,11 @@ ServerConf const &Client::getServerInfo() const
  * PUBLIC METHODS
  ****************/
 
-/// @brief
-/// @return
+/**
+ * @brief Read data in fd and try to construct the request. While request is
+ * complete retrive correct server information and update fd to EPOLLOUT
+ * @param webServ Reference to webServ
+ */
 void Client::doOnRead(WebServ &webServ)
 {
 	char buffer[BUFFER_SIZE];
@@ -137,8 +140,11 @@ void Client::doOnRead(WebServ &webServ)
 	}
 }
 
-/// @brief
-void Client::doOnWrite(WebServ &webServ)
+/**
+ * @brief Try to write response in fd if is ready otherwise create response
+ * @param webServ Reference to webServ
+ */
+void Client::doOnWrite(WebServ & webServ)
 {
 	if (_responseReady == true)
 	{
@@ -148,31 +154,16 @@ void Client::doOnWrite(WebServ &webServ)
 		_request = Request();
 		if (_cgi)
 		{
-			webServ.eraseFd(_cgi->getReadFd());
-			webServ.eraseFd(_cgi->getWriteFd());
-			delete _cgi;
+			//webServ.removeFd(_cgi->getReadFd());
+			//webServ.removeFd(_cgi->getWriteFd());
 			_cgi = NULL;
-		}	
+		}
 		return;
 	}
 
 	if (_request.getExtension().compare("php") == 0)
 	{
-		_cgi = new Cgi(*this);
-		if (_cgi->run() < 0)
-		{
-			errorResponse(INTERNAL_SERVER_ERROR);
-			webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
-			return;
-		}
-
-		webServ.addFd(_cgi->getWriteFd(), _cgi);
-		webServ.updateEpoll(_cgi->getWriteFd(), EPOLLOUT, EPOLL_CTL_ADD);
-
-		webServ.addFd(_cgi->getReadFd(), _cgi);
-		webServ.updateEpoll(_cgi->getReadFd(), 0, EPOLL_CTL_ADD);
-
-		webServ.updateEpoll(_fd, 0, EPOLL_CTL_MOD);
+		handleScript(webServ);
 	}
 	else
 	{
@@ -183,15 +174,21 @@ void Client::doOnWrite(WebServ &webServ)
 	}
 }
 
-/// @brief
-/// @param mapFd
-/// @param event
+/**
+ * @brief
+ * @param webServ
+ * @param event
+ */
 void Client::doOnError(WebServ &webServ, uint32_t event)
 {
 	std::cout << "Client on error, event = " << event << std::endl;
 	webServ.removeFd(_fd);
 }
 
+/**
+ * @brief
+ * @param response
+ */
 void Client::responseCgi(std::string const &response)
 {
 	_responseReady = true;
@@ -233,7 +230,7 @@ void Client::errorResponse(status_code_t status)
 	// TODO: Find error file
 	std::string extension = "html";
 
-	std::string error = Response::errorResponse(status); 
+	std::string error = Response::errorResponse(status);
 	std::vector<unsigned char> body = std::vector<unsigned char>(error.begin(), error.end());
 
 	resp_t resp = {status, body, extension, _rawData, false};
@@ -290,6 +287,29 @@ ServerConf Client::getCorrectServer()
 	}
 	return (*(_serverInfo.begin()));
 }
+
+
+void	Client::handleScript(WebServ & webServ)
+{
+	_cgi = new Cgi(*this);
+
+	if (_cgi->run() < 0)
+	{
+		errorResponse(INTERNAL_SERVER_ERROR);
+		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+		return;
+	}
+
+	webServ.addFd(_cgi->getWriteFd(), _cgi);
+	webServ.updateEpoll(_cgi->getWriteFd(), EPOLLOUT, EPOLL_CTL_ADD);
+
+	// Set NULL at AFileDescriptor in order to avoir double free if error occur
+	webServ.addFd(_cgi->getReadFd(), _cgi);
+	webServ.updateEpoll(_cgi->getReadFd(), 0, EPOLL_CTL_ADD);
+
+	webServ.updateEpoll(_fd, 0, EPOLL_CTL_MOD);
+}
+
 
 void Client::handleException(std::exception &exception)
 {

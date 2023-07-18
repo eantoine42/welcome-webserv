@@ -37,6 +37,7 @@ class Client : public AFileDescriptor
 		void		searchRequestLine();
 		void		searchHeaders();
 		ServerConf	getCorrectServer();
+		void		handleScript(WebServ & webServ);
 		void		handleException(std::exception & exception);
 
 	public:

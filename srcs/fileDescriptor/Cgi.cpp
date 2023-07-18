@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 15:16:12 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/18 23:19:44 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,7 +84,13 @@ int Cgi::getWriteFd() const
 /****************
  * PUBLIC METHODS
  ****************/
-int Cgi::run()
+
+
+/**
+ * @brief Run cgi script
+ * @return 
+ */
+int     Cgi::run()
 {
     int pipeToCgi[2];
     int pipeFromCgi[2];
@@ -96,26 +102,26 @@ int Cgi::run()
     if (pid == 0)
         runChildProcess(pipeToCgi, pipeFromCgi);
     
-
     close(pipeFromCgi[1]);
     close(pipeToCgi[0]);
     _fdRead = pipeFromCgi[0];
     _fdWrite = pipeToCgi[1];
+
     if (fcntl(_fdRead, F_SETFL, O_NONBLOCK) < 0)
     {
         std::cerr << "Fcntl error" << std::endl;
-        return -1;
+        return (-1);
     }
-    _fd = _fdRead;
     return (0);
 }
 
-/// @brief
-/// @param epoll
+
+/**
+ * @brief Read data from cgi and construct response if EOF is reached
+ * @param webServ 
+ */
 void Cgi::doOnRead(WebServ &webServ)
 {
-    webServ.eraseFd(_fdWrite);
-
     unsigned char buffer[BUFFER_SIZE];
     ssize_t n;
     size_t start;
@@ -129,23 +135,37 @@ void Cgi::doOnRead(WebServ &webServ)
         str = str.substr(start);
         str = Response::cgiSimpleResponse(str);
         _socketInfo->responseCgi(str);
+
+        webServ.updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
         close(_fdRead);
-  //      webServ.removeFd(_fdRead);
-        //webServ.updateEpoll(_fdRead, 0, EPOLL_CTL_MOD);
+
         webServ.updateEpoll(_socketInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
     }
 }
 
-/// @brief
-void Cgi::doOnWrite(WebServ &webServ)
+
+/**
+ * @brief Send data to CGI and handle fd
+ * @param webServ 
+ */
+void Cgi::doOnWrite(WebServ & webServ)
 {
+    std::vector<unsigned char> body =  _socketInfo->getRequest().getMessageBody();   
+
+    write(_fdWrite, &body[0], body.size());
+
+    webServ.updateEpoll(_fdWrite, 0, EPOLL_CTL_DEL);
     close(_fdWrite);
+
     webServ.updateEpoll(_fdRead, EPOLLIN, EPOLL_CTL_MOD);
 }
 
-/// @brief
-/// @param mapFd
-/// @param event
+
+/**
+ * @brief 
+ * @param webServ 
+ * @param event 
+ */
 void Cgi::doOnError(WebServ &webServ, uint32_t event)
 {
     std::cout << "Client on error, event = " << event << std::endl;
@@ -157,7 +177,7 @@ void Cgi::doOnError(WebServ &webServ, uint32_t event)
  * PRIVATE METHODS
  *****************/
 
-char **Cgi::mapCgiParams()
+char **     Cgi::mapCgiParams()
 {
     ServerConf const &serverInfo = _socketInfo->getServerInfo();
     Request const &request = _socketInfo->getRequest();
@@ -166,8 +186,8 @@ char **Cgi::mapCgiParams()
 
     std::string tab[19] = {
         std::string("AUTH_TYPE=") + "",
-        std::string("CONTENT_LENGTH=") + (headers.find("CONTENT_LENGTH") != headers.end() ? headers.find("CONTENT_LENGTH")->second : ""),
-        std::string("CONTENT_TYPE=") + (headers.find("CONTENT_TYPE") != headers.end() ? headers.find("CONTENT_TYPE")->second : ""),
+        std::string("CONTENT_LENGTH=") + ((headers.find("Content-Length") != headers.end()) ? headers.find("Content-Length")->second : ""),
+        std::string("CONTENT_TYPE=") + (headers.find("Content-Type") != headers.end() ? headers.find("Content-Type")->second : ""),
         std::string("GATEWAY_INTERFACE=CGI/1.1"),
         std::string("PATH_INFO=/"),
         std::string("PATH_TRANSLATED="),
@@ -175,7 +195,7 @@ char **Cgi::mapCgiParams()
         std::string("REMOTE_ADDR="),                            // Set remote addr in request object
         std::string("REMOTE_HOST="),
         std::string("REMOTE_IDENT="),
-        std::string("REMOTE_USER="),
+       // std::string("REMOTE_USER="),
         std::string("REQUEST_METHOD=") + request.getHttpMethod(),
         std::string("SCRIPT_NAME=") + request.getFileName(),
         std::string("PHP_SELF=") + request.getFileName(),
@@ -184,7 +204,7 @@ char **Cgi::mapCgiParams()
         std::string("SERVER_PORT=4242"),                    // TODO USE ITOA
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),
-        // std::string("REQUEST_URI=") + request.getPathRequest()
+        std::string("REQUEST_URI=") + request.getPathRequest()
     };
 
     free(cwd);
@@ -217,7 +237,7 @@ char **Cgi::mapCgiParams()
     return (env);
 }
 
-int Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
+int     Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
 {
     int pid;
 
@@ -245,7 +265,7 @@ int Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
     return (pid);
 }
 
-void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
+void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
 {
     std::string cgiPath = _socketInfo->getServerInfo().getCgi().find("php")->second;
     char *cgiPathCopy = new char[cgiPath.size() + 1];

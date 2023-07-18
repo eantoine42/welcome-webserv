@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 14:30:03 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/18 16:18:25 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,22 +64,31 @@ WebServ::~WebServ()
 * PUBLIC METHODS
 ****************/
 
-/// @brief 
-/// @param fileDescriptor 
+/**
+ * @brief Bind a file descriptor with a Afiledescriptor object in mapFd 
+ * @param fd File descriptor number
+ * @param fileDescriptor File descriptor object
+ */
 void    WebServ::addFd(int fd, AFileDescriptor * fileDescriptor)
 {
     _mapFd[fd] = fileDescriptor;
 }
 
-/// @brief 
-/// @param fdTime 
+
+/**
+ * @brief Keep a track of client start time
+ * @param clientInfo A pair which bind a fd with a start time
+ */
 void	WebServ::addClientTimes(std::pair<int, long long> clientInfo)
 {
 	_clientTimes.push_back(clientInfo);
 }
 
-/// @brief Init an epoll and add listening socket
-/// @throw EpollInitError
+
+/**
+ * @brief Init an epoll and add listening server/socket
+ * @throw EpollInitError
+ */
 void    WebServ::epollInit()
 {
     std::map<int, AFileDescriptor *>::const_iterator   	it;
@@ -98,7 +107,10 @@ void    WebServ::epollInit()
     }
 }
 
-/// @brief Start webServ and handle events with epoll
+
+/**
+ * @brief Start webServ and handle events with epoll
+ */
 void    WebServ::start()
 {
     int nfds;
@@ -127,6 +139,14 @@ void    WebServ::start()
 	}
 }
 
+
+/**
+ * @brief Update a fd in epoll according event and mod
+ * @param fd Fd number
+ * @param event see man epoll (Ex: EPOLLIN, EPOLLOUT ...)
+ * @param mod see man epoll (Ex: EPOLL_CTL_ADD, EPOLL_CTL_MOD ...)
+ * @throw EpollInitError
+ */
 void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
 {
 	struct epoll_event ev;
@@ -138,12 +158,21 @@ void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
 		throw EpollInitError(strerror(errno));
 }
 
+
+/**
+ * @brief Remove fd in mapFd. Close fd, delete object if present and erase item
+ * in mapFd and remove fd is present in clientTimes
+ * @param fd Fd number
+ */
 void	WebServ::removeFd(int fd)
 {
 	close(fd);
 	if (_mapFd.find(fd) == _mapFd.end())
 		return ;
-	delete _mapFd[fd];
+
+	if (_mapFd[fd])
+		delete _mapFd[fd];
+
 	_mapFd.erase(fd);
 	
 	std::vector<std::pair<int, long long> >::iterator it = _clientTimes.begin();
@@ -155,11 +184,6 @@ void	WebServ::removeFd(int fd)
 			break;
 		}
 	}
-}
-
-void	WebServ::eraseFd(int fd)
-{
-	_mapFd.erase(fd);
 }
 /******************************************************************************/
 
