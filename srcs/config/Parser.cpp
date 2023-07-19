@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 12:09:50 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 21:15:38 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <arpa/inet.h> // inet_addr
 #include <netdb.h> // getprotobyname
 #include <fstream>
+#include <algorithm> // sort
 
 /*****************
 * CANNONICAL FORM
@@ -147,6 +148,7 @@ void    Parser::parseServers(std::vector<ServerConf> & serverConfs, std::string 
 				ServerConf tempServer;
 				tempServer.setServerConf( StringUtils::trimLineToI(rawConfig, i + 1));
 				tempServer.cleanDupServerConf(serverConfs);
+				tempServer.sortLocationBlock();
 				serverConfs.push_back(tempServer);
 			}
 		}

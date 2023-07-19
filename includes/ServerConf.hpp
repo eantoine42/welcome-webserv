@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:12:31 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:17:54 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 17:27:13 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,6 +92,7 @@ class ServerConf
 		void	setServerConf(const std::string &str);
 		void	addLocation(std::string str, int &count, int &ServerConf_ct);
 		void 	cleanDupServerConf(std::vector<ServerConf> ServerConfInfo);
+		void	sortLocationBlock();
 
 		struct server_instruction_tab_entry_t
 		{

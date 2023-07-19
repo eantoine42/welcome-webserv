@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:28:13 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 17:28:12 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -460,6 +460,11 @@ int ServerConf::correctServerInstruction(std::vector<std::string> token)
 	return -1;
 }
 
+
+void	ServerConf::sortLocationBlock()
+{
+	std::sort(_location.begin(), _location.end());
+}
 /******************************************************************************/
 
 /***********

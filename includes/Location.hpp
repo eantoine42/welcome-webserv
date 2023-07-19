@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 23:16:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 21:29:33 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,8 +100,11 @@ class Location
 		};
 		static const location_instruction_tab_entry_t 	LOCATION_INSTRUCTIONS[];
 		static int	correctLocationInstruction(std::vector<std::string> token);
+
 };
 
 std::ostream    &operator<<(std::ostream &o, Location const &i);
+bool	operator<(const Location & l1, const Location & l2);
+
 
 #endif

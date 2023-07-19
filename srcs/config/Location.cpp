@@ -334,3 +334,9 @@ std::ostream &operator<<(std::ostream &o, Location const &i)
 		o << "    errorPage			=	[" << i.getError() << "]" << std::endl;
 	return (o);
 };
+
+
+bool	operator<(const Location & l1, const Location & l2)
+{
+	return (l1.getUri().size() < l2.getUri().size());
+}
