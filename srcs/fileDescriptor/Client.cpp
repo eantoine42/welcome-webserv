@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 21:51:02 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 22:29:03 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -164,13 +164,32 @@ void Client::doOnWrite(WebServ & webServ)
 		return;
 	}
 
+	Location const * location = getLocationBlock();
+	std::string	path;
+	std::string	request; 
+
+	if (location)
+	{
+		if (location->getUri()[0] == '/')
+			path = _serverInfoCurr.getRoot() + location->getUri();
+		else
+			path = location->getUri();
+		request = _request.getPathRequest().substr(location->getUri().size() - 1);
+		std::cout << "path is " << path << std::endl;		
+		std::cout << "request is " << request << std::endl;		
+
+	}
+	else
+	{
+
+	}
+
 	if (_request.getExtension().compare("php") == 0)
 	{
 		handleScript(webServ);
 	}
 	else
 	{
-		Location const * location = getLocationBlock(); 
 		if (location)
 			std::cout << "Location block is -> " << location->getUri() << std::endl;
 		else
