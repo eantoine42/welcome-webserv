@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:10 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 16:18:43 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 09:17:37 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 #include <sys/epoll.h>
 #include "Server.hpp"
 #include "AFileDescriptor.hpp"
-#include "Cgi.hpp"
 
 #define MAX_EVENTS 1024
 
@@ -40,6 +39,7 @@ class WebServ
 		~WebServ();
 
         void    addFd(int fd, AFileDescriptor * server);
+        void	eraseFd(int fd);
         void    addClientTimes(std::pair<int, long long> clientInfo);
         void    removeFd(int fd);
         void    epollInit();

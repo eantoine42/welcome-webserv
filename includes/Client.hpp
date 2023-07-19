@@ -17,10 +17,9 @@
 #include "HttpUtils.hpp"
 #include "Request.hpp"
 #include "Server.hpp"
+#include "Cgi.hpp"
 
 #define BUFFER_SIZE		1024
-
-class Cgi;
 
 class Client : public AFileDescriptor
 {
@@ -30,7 +29,7 @@ class Client : public AFileDescriptor
 		ServerConf 						_serverInfoCurr; 
 		Request							_request;
 		bool							_responseReady;
-		Cgi *							_cgi;
+		Cgi 							_cgi;
 
 		Client(void);
 

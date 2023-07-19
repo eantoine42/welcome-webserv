@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 18:55:11 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 09:25:27 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@
 #include "Response.hpp"
 #include "Exception.hpp"
 #include "WebServ.hpp"
-#include "Cgi.hpp"
 
 #include <cstddef>
 #include <sys/epoll.h>
@@ -32,7 +31,7 @@
  *****************/
 
 Client::Client(void)
-	: AFileDescriptor(), _responseReady(false), _cgi(NULL)
+	: AFileDescriptor(), _responseReady(false)
 {
 }
 
@@ -72,7 +71,8 @@ Client::~Client()
  * CONSTRUCTORS
  ***************/
 Client::Client(int fd, std::vector<ServerConf> const &serverInfo)
-	: AFileDescriptor(fd), _serverInfo(serverInfo), _cgi(NULL)
+	: 	AFileDescriptor(fd),
+		_serverInfo(serverInfo)
 {
 }
 /******************************************************************************/
@@ -149,14 +149,16 @@ void Client::doOnWrite(WebServ & webServ)
 	if (_responseReady == true)
 	{
 		send(_fd, &(_rawData[0]), _rawData.size(), 0);
+
+		// Reset client field for next request
 		webServ.updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
 		_responseReady = false;
 		_request = Request();
-		if (_cgi)
+		if (_cgi.getPidChild() != -1)
 		{
-			//webServ.removeFd(_cgi->getReadFd());
-			//webServ.removeFd(_cgi->getWriteFd());
-			_cgi = NULL;
+			webServ.eraseFd(_cgi.getReadFd());
+			webServ.eraseFd(_cgi.getWriteFd());
+			_cgi = Cgi();
 		}
 		return;
 	}
@@ -291,21 +293,21 @@ ServerConf Client::getCorrectServer()
 
 void	Client::handleScript(WebServ & webServ)
 {
-	_cgi = new Cgi(*this);
+	_cgi = Cgi(*this);
 
-	if (_cgi->run() < 0)
+	if (_cgi.run() < 0)
 	{
 		errorResponse(INTERNAL_SERVER_ERROR);
 		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 		return;
 	}
 
-	webServ.addFd(_cgi->getWriteFd(), _cgi);
-	webServ.updateEpoll(_cgi->getWriteFd(), EPOLLOUT, EPOLL_CTL_ADD);
+	webServ.addFd(_cgi.getWriteFd(), &_cgi);
+	webServ.updateEpoll(_cgi.getWriteFd(), EPOLLOUT, EPOLL_CTL_ADD);
 
 	// Set NULL at AFileDescriptor in order to avoir double free if error occur
-	webServ.addFd(_cgi->getReadFd(), _cgi);
-	webServ.updateEpoll(_cgi->getReadFd(), 0, EPOLL_CTL_ADD);
+	webServ.addFd(_cgi.getReadFd(), &_cgi);
+	webServ.updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_ADD);
 
 	webServ.updateEpoll(_fd, 0, EPOLL_CTL_MOD);
 }

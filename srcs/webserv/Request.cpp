@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 21:37:00 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 11:23:01 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,18 +147,21 @@ void	Request::handleRequestLine(std::string requestLine)
 
 	if (HttpUtils::isMethodAllowed(_httpMethod) == false)
 		throw RequestError("Http method not handle in this server");
-	if (_httpMethod.compare("POST") == 0)
-		_hasMessageBody = true;
 	if (_httpVersion.compare("HTTP/1.1") != 0)
 		throw RequestError("Bad http version");
 	if (_pathRequest[0] != '/')
 		throw RequestError("Path request must start with /");
+
+	if (_httpMethod.compare("POST") == 0)
+		_hasMessageBody = true;
+
 	if (query == std::string::npos)
 		_fileName = _pathRequest.substr(lastSlash + 1);
 	else
 	{
-		_fileName = _pathRequest.substr(lastSlash, query);
-		_queryParam = _pathRequest.substr(query);
+		_fileName = _pathRequest.substr(lastSlash + 1, query - lastSlash - 1);
+		_queryParam = _pathRequest.substr(query + 1);
+		_pathRequest = _pathRequest.substr(0, query);
 	}
 	if ((extension = _fileName.rfind(".")) != std::string::npos)
 		_extension = _fileName.substr(extension + 1);

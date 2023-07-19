@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 16:18:25 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 09:07:24 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,7 @@ WebServ &   WebServ::operator=(WebServ const & rhs)
 
 WebServ::~WebServ()
 {
+	// TODO: handle AFileDescriptor according to origin
 	std::map<int, AFileDescriptor *>::iterator it = this->_mapFd.begin();
 	for (; it != this->_mapFd.end(); it++)
 	{
@@ -72,6 +73,16 @@ WebServ::~WebServ()
 void    WebServ::addFd(int fd, AFileDescriptor * fileDescriptor)
 {
     _mapFd[fd] = fileDescriptor;
+}
+
+
+/**
+ * @brief 
+ * @param fd 
+ */
+void	WebServ::eraseFd(int fd)
+{
+	_mapFd.erase(fd);
 }
 
 

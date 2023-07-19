@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 23:19:44 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/19 10:04:33 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "Response.hpp"
 #include "Debugger.hpp"
 #include "WebServ.hpp"
+#include "Client.hpp"
 
 #include <algorithm> // replace
 #include <cstring>   // toupper
@@ -26,16 +27,22 @@
  * CANNONICAL FORM
  *****************/
 
-Cgi::Cgi(void) : AFileDescriptor(), _socketInfo(NULL)
+Cgi::Cgi(void) 
+    :   AFileDescriptor(-1),
+        _clientInfo(NULL),
+        _fdRead(-1),
+        _fdWrite(-1),
+        _pidChild(-1)
 {
 }
 
 Cgi::Cgi(Cgi const &copy)
     : AFileDescriptor(copy),
       _rawData(copy._rawData),
-      _socketInfo(copy._socketInfo),
+      _clientInfo(copy._clientInfo),
       _fdRead(copy._fdRead),
-      _fdWrite(copy._fdWrite)
+      _fdWrite(copy._fdWrite),
+      _pidChild(copy._pidChild)
 {
 }
 
@@ -45,9 +52,10 @@ Cgi &Cgi::operator=(Cgi const &rhs)
     {
         _fd = rhs._fd;
         _rawData = rhs._rawData;
-        _socketInfo = rhs._socketInfo;
+        _clientInfo = rhs._clientInfo;
         _fdRead = rhs._fdRead;
         _fdWrite = rhs._fdWrite;
+        _pidChild = rhs._pidChild;
     }
 
     return (*this);
@@ -61,7 +69,12 @@ Cgi::~Cgi()
 /**************
  * CONSTRUCTORS
  ***************/
-Cgi::Cgi(Client &socketFd) : AFileDescriptor(), _socketInfo(&socketFd)
+Cgi::Cgi(Client & client) 
+    :   AFileDescriptor(-1),
+        _clientInfo(&client),
+        _fdRead(-1),
+        _fdWrite(-1),
+        _pidChild(-1)
 {
 }
 /******************************************************************************/
@@ -79,12 +92,16 @@ int Cgi::getWriteFd() const
 {
     return _fdWrite;
 }
+
+int Cgi::getPidChild() const
+{
+    return _pidChild;
+}
 /******************************************************************************/
 
 /****************
  * PUBLIC METHODS
  ****************/
-
 
 /**
  * @brief Run cgi script
@@ -134,12 +151,12 @@ void Cgi::doOnRead(WebServ &webServ)
         start = str.find("\r\n\r\n") + 4;
         str = str.substr(start);
         str = Response::cgiSimpleResponse(str);
-        _socketInfo->responseCgi(str);
+        _clientInfo->responseCgi(str);
 
         webServ.updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
         close(_fdRead);
 
-        webServ.updateEpoll(_socketInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
+        webServ.updateEpoll(_clientInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
     }
 }
 
@@ -150,7 +167,7 @@ void Cgi::doOnRead(WebServ &webServ)
  */
 void Cgi::doOnWrite(WebServ & webServ)
 {
-    std::vector<unsigned char> body =  _socketInfo->getRequest().getMessageBody();   
+    std::vector<unsigned char> body =  _clientInfo->getRequest().getMessageBody();   
 
     write(_fdWrite, &body[0], body.size());
 
@@ -179,8 +196,8 @@ void Cgi::doOnError(WebServ &webServ, uint32_t event)
 
 char **     Cgi::mapCgiParams()
 {
-    ServerConf const &serverInfo = _socketInfo->getServerInfo();
-    Request const &request = _socketInfo->getRequest();
+    ServerConf const &serverInfo = _clientInfo->getServerInfo();
+    Request const &request = _clientInfo->getRequest();
     std::map<std::string, std::string> const &headers = request.getHeaders();
     char *cwd = get_current_dir_name();
 
@@ -199,7 +216,8 @@ char **     Cgi::mapCgiParams()
         std::string("REQUEST_METHOD=") + request.getHttpMethod(),
         std::string("SCRIPT_NAME=") + request.getFileName(),
         std::string("PHP_SELF=") + request.getFileName(),
-        std::string("SCRIPT_FILENAME=") + cwd + "/" + request.getFileName(),
+        //std::string("SCRIPT_FILENAME=") + cwd + "/" + request.getPathRequest(),
+        std::string("SCRIPT_FILENAME=") + cwd + "/www" + request.getPathRequest(),
         std::string("SERVER_NAME=") + serverInfo.getName(), // Get to header host ?
         std::string("SERVER_PORT=4242"),                    // TODO USE ITOA
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
@@ -267,11 +285,11 @@ int     Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
 
 void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
 {
-    std::string cgiPath = _socketInfo->getServerInfo().getCgi().find("php")->second;
+    std::string cgiPath = _clientInfo->getServerInfo().getCgi().find("php")->second;
     char *cgiPathCopy = new char[cgiPath.size() + 1];
     strcpy(cgiPathCopy, cgiPath.c_str());
 
-    std::string script = _socketInfo->getRequest().getFileName();
+    std::string script = _clientInfo->getRequest().getFileName();
     char *scriptCopy = new char[script.size() + 1];
     strcpy(scriptCopy, script.c_str());
 
