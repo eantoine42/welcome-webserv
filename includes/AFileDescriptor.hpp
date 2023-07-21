@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 14:06:22 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/24 19:59:55 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/21 23:22:27 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,15 +20,16 @@ class AFileDescriptor
 {
 	protected:
 
-		int		_fd;
+		int			_fd;
+		WebServ *	_webServ;
 
 		// Cannonical form
-		AFileDescriptor();
+		AFileDescriptor(void);
 		AFileDescriptor(AFileDescriptor const & copy);
 		AFileDescriptor & operator=(AFileDescriptor const & rhs);
 
 		// Constructors
-		AFileDescriptor(int fd);
+		AFileDescriptor(int fd, WebServ & webServ);
 
 	public:
 		virtual ~AFileDescriptor();
@@ -38,9 +39,9 @@ class AFileDescriptor
 		void	setFd(int fd);
 
 		// Public methods
-		virtual void doOnRead(WebServ & webserv) = 0;
-		virtual void doOnWrite(WebServ & webServ) = 0;
-		virtual void doOnError(WebServ & webServ, uint32_t event) = 0;
+		virtual void doOnRead() = 0;
+		virtual void doOnWrite() = 0;
+		virtual void doOnError(uint32_t event) = 0;
 
 };
 
