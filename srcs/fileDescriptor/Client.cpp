@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 22:29:03 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/21 14:24:06 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "Response.hpp"
 #include "Exception.hpp"
 #include "WebServ.hpp"
+#include "FileUtils.hpp"
 
 #include <cstddef>
 #include <cstring> // strncmp
@@ -72,8 +73,8 @@ Client::~Client()
  * CONSTRUCTORS
  ***************/
 Client::Client(int fd, std::vector<ServerConf> const &serverInfo)
-	: 	AFileDescriptor(fd),
-		_serverInfo(serverInfo)
+	: AFileDescriptor(fd),
+	  _serverInfo(serverInfo)
 {
 }
 /******************************************************************************/
@@ -145,7 +146,7 @@ void Client::doOnRead(WebServ &webServ)
  * @brief Try to write response in fd if is ready otherwise create response
  * @param webServ Reference to webServ
  */
-void Client::doOnWrite(WebServ & webServ)
+void Client::doOnWrite(WebServ &webServ)
 {
 	if (_responseReady == true)
 	{
@@ -164,40 +165,56 @@ void Client::doOnWrite(WebServ & webServ)
 		return;
 	}
 
-	Location const * location = getLocationBlock();
-	std::string	path;
-	std::string	request; 
-
-	if (location)
+	try
 	{
-		if (location->getUri()[0] == '/')
-			path = _serverInfoCurr.getRoot() + location->getUri();
+		if (_request.getExtension().compare("php") == 0)
+			handleScript(webServ);
 		else
-			path = location->getUri();
-		request = _request.getPathRequest().substr(location->getUri().size() - 1);
-		std::cout << "path is " << path << std::endl;		
-		std::cout << "request is " << request << std::endl;		
+		{
 
-	}
-	else
-	{
+			Location const *location = getLocationBlock();
+			std::string path;
+			std::string request;
 
-	}
+			if (location)
+			{
+				// Construct path if location block is relative or absolute
+				if (location->getUri()[0] == '/')
+					path = _serverInfoCurr.getRoot() + location->getUri();
+				else
+					path = location->getUri();
 
-	if (_request.getExtension().compare("php") == 0)
-	{
-		handleScript(webServ);
+				request = _request.getPathRequest().substr(location->getUri().size() - 1);
+
+				if (_request.getHttpMethod() == "GET")
+				{
+				}
+
+				// Request folder or index
+				if (request.empty() || request.size() == 1)
+				{
+					// Loop over different index and find one valid
+					// otherwise check if autoindex is on
+				}
+				else
+				{
+					if (FileUtils::fileExists(path.c_str()) == false)
+						throw RequestError(NOT_FOUND);
+				}
+			}
+			else
+			{
+			}
+
+			// getResponse();
+			// postResponse();
+			// deleteResponse();
+			// webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+		}
 	}
-	else
+	catch (std::exception &exception)
 	{
-		if (location)
-			std::cout << "Location block is -> " << location->getUri() << std::endl;
-		else
-			std::cout << "Take root server config" << std::endl;
-		getResponse();
-		// postResponse();
-		// deleteResponse();
-		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+		handleException(exception);
 	}
 }
 
@@ -315,9 +332,14 @@ ServerConf Client::getCorrectServer()
 	return (*(_serverInfo.begin()));
 }
 
-
-void	Client::handleScript(WebServ & webServ)
+void Client::handleScript(WebServ &webServ)
 {
+	std::string path = _serverInfoCurr.getRoot() + _request.getPathRequest();
+	if (!FileUtils::fileExists(path.c_str()))
+		throw RequestError(NOT_FOUND);
+	if (!FileUtils::fileRead(path.c_str()))
+		throw RequestError(FORBIDDEN);
+
 	_cgi = Cgi(*this);
 
 	if (_cgi.run() < 0)
@@ -337,14 +359,13 @@ void	Client::handleScript(WebServ & webServ)
 	webServ.updateEpoll(_fd, 0, EPOLL_CTL_MOD);
 }
 
-
 void Client::handleException(std::exception &exception)
 {
 	DEBUG_COUT(exception.what());
 	try
 	{
-		dynamic_cast<RequestError &>(exception);
-		errorResponse(BAD_REQUEST);
+		RequestError error = dynamic_cast<RequestError &>(exception);
+		errorResponse(error.getStatusCode());
 	}
 	catch (std::exception &exception)
 	{
@@ -352,19 +373,30 @@ void Client::handleException(std::exception &exception)
 	}
 }
 
-Location const * Client::getLocationBlock()
+Location const *Client::getLocationBlock()
 {
 	std::vector<Location>::const_reverse_iterator it = _serverInfoCurr.getLocation().rbegin();
 
 	for (; it != _serverInfoCurr.getLocation().rend(); it++)
 	{
 		int result = std::strncmp(
-			(_request.getPathRequest() + "/").c_str(), 
-			it->getUri().c_str(), 
-			it->getUri().size()
-		);
+			(_request.getPathRequest() + "/").c_str(),
+			it->getUri().c_str(),
+			it->getUri().size());
 		if (result == 0)
-			return &(*it); 
+			return &(*it);
 	}
 	return (NULL);
 }
+
+/*void Client::handleGetRequest(Location *location)
+{
+}
+
+void Client::handlePostRequest(Location *location)
+{
+}
+
+void Client::handleDeleteRequest(Location *location)
+{
+}*/

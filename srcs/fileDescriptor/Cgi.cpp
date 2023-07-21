@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 10:04:33 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/21 10:52:14 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "Debugger.hpp"
 #include "WebServ.hpp"
 #include "Client.hpp"
+#include "StringUtils.hpp"
 
 #include <algorithm> // replace
 #include <cstring>   // toupper
@@ -196,30 +197,28 @@ void Cgi::doOnError(WebServ &webServ, uint32_t event)
 
 char **     Cgi::mapCgiParams()
 {
-    ServerConf const &serverInfo = _clientInfo->getServerInfo();
-    Request const &request = _clientInfo->getRequest();
-    std::map<std::string, std::string> const &headers = request.getHeaders();
+    ServerConf const & serverInfo = _clientInfo->getServerInfo();
+    Request const & request = _clientInfo->getRequest();
+    std::map<std::string, std::string> const & headers = request.getHeaders();
     char *cwd = get_current_dir_name();
 
     std::string tab[19] = {
-        std::string("AUTH_TYPE=") + "",
+        std::string("AUTH_TYPE="),
         std::string("CONTENT_LENGTH=") + ((headers.find("Content-Length") != headers.end()) ? headers.find("Content-Length")->second : ""),
         std::string("CONTENT_TYPE=") + (headers.find("Content-Type") != headers.end() ? headers.find("Content-Type")->second : ""),
         std::string("GATEWAY_INTERFACE=CGI/1.1"),
         std::string("PATH_INFO=/"),
         std::string("PATH_TRANSLATED="),
-        std::string("QUERY_STRING=") + request.getQueryParam(), // Set query string in request object
-        std::string("REMOTE_ADDR="),                            // Set remote addr in request object
+        std::string("QUERY_STRING=") + request.getQueryParam(),
+        std::string("REMOTE_ADDR="),
         std::string("REMOTE_HOST="),
         std::string("REMOTE_IDENT="),
-       // std::string("REMOTE_USER="),
         std::string("REQUEST_METHOD=") + request.getHttpMethod(),
         std::string("SCRIPT_NAME=") + request.getFileName(),
         std::string("PHP_SELF=") + request.getFileName(),
-        //std::string("SCRIPT_FILENAME=") + cwd + "/" + request.getPathRequest(),
-        std::string("SCRIPT_FILENAME=") + cwd + "/www" + request.getPathRequest(),
-        std::string("SERVER_NAME=") + serverInfo.getName(), // Get to header host ?
-        std::string("SERVER_PORT=4242"),                    // TODO USE ITOA
+        std::string("SCRIPT_FILENAME=") + cwd + serverInfo.getRoot().substr(1) + request.getPathRequest(),
+        std::string("SERVER_NAME=") + serverInfo.getName(),
+        std::string("SERVER_PORT=") + StringUtils::intToString(serverInfo.getPort()),
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),
         std::string("REQUEST_URI=") + request.getPathRequest()
@@ -300,7 +299,6 @@ void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
 
     char **envCgi = mapCgiParams();
 
-    // TODO: MAP FD
     close(pipeToCgi[1]);
     close(pipeFromCgi[0]);
     dup2(pipeToCgi[0], STDIN_FILENO);
@@ -311,6 +309,9 @@ void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     delete[] cgiPathCopy;
     delete[] scriptCopy;
     delete[] argv;
+    for (int i = 0; envCgi[i]; i++)
+        delete envCgi[i];
+    delete[] envCgi;
     close(pipeFromCgi[0]);
     close(pipeFromCgi[1]);
     close(pipeToCgi[0]);

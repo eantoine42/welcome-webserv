@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 20:56:47 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/06/29 21:13:11 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/21 11:07:42 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ class FileUtils
 
         static bool    fileExists(const char* path);
         static bool    fileRead(const char* path);
+        static bool    fileExec(const char* path);
         static bool    isDirectory(const char* path);
 
 };

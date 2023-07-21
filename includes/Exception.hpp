@@ -1,6 +1,7 @@
 #ifndef EXCEPTION_HPP
 # define EXCEPTION_HPP
 
+#include "HttpUtils.hpp"
 #include <exception>
 #include <string>
 #include <iostream>
@@ -199,19 +200,20 @@ class EpollInitError : public std::exception
 class RequestError : public std::exception
 {
 	private:
-		std::string	_msg;
+		status_code_t	_statusCode;
 
 	public:
-		RequestError(std::string msg)
-		:	_msg(msg) {}
+		RequestError(status_code_t statusCode)
+		:	_statusCode(statusCode) {}
 
 		~RequestError() throw() {};
 
 		char const	*what() const throw()
 		{
-			std::cerr << "Error while request processing" << std::endl;
-			return _msg.c_str();
+			return HttpUtils::RESPONSE_STATUS.at(_statusCode).c_str();
 		}
+
+		status_code_t	getStatusCode() {return _statusCode;}
 };
 
 class FileDescriptorError : public std::exception

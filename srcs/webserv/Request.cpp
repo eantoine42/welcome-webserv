@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 11:23:01 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/21 14:20:14 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,7 +136,7 @@ void	Request::handleRequestLine(std::string requestLine)
 {
 	std::vector<std::string> vec = StringUtils::splitString(requestLine, " ");
 	if (vec.size() != 3)
-		throw RequestError("Request line uncomplete");
+		throw RequestError(BAD_REQUEST);
 	_httpMethod = vec[0];
 	_pathRequest = vec[1];
 	_httpVersion = vec[2];
@@ -146,11 +146,11 @@ void	Request::handleRequestLine(std::string requestLine)
 	size_t extension;
 
 	if (HttpUtils::isMethodAllowed(_httpMethod) == false)
-		throw RequestError("Http method not handle in this server");
+		throw RequestError(BAD_REQUEST);
 	if (_httpVersion.compare("HTTP/1.1") != 0)
-		throw RequestError("Bad http version");
+		throw RequestError(BAD_REQUEST);
 	if (_pathRequest[0] != '/')
-		throw RequestError("Path request must start with /");
+		throw RequestError(BAD_REQUEST);
 
 	if (_httpMethod.compare("POST") == 0)
 		_hasMessageBody = true;
@@ -191,13 +191,13 @@ void	Request::handleHeaders(std::string headers)
 		_headers[key] = value;
 	}
 	if (_headers.find("Host") == _headers.end())
-		throw RequestError("Missing Host header");
+		throw RequestError(BAD_REQUEST);
 	if (_httpMethod == "POST")
 	{
 		std::map<std::string, std::string>::iterator length = _headers.find("Content-Length");
 		std::map<std::string, std::string>::iterator encod = _headers.find("Transfer-Encoding");
 		if (length == _headers.end() && encod == _headers.end())
-			throw RequestError("Missing headers about message body");
+			throw RequestError(BAD_REQUEST);
 		if (_encode == false)
 			_bodySize = atoi(length->second.c_str()); // TODO: Check if size is an integer
 	}
