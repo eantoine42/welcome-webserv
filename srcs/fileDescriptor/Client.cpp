@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/20 18:48:42 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/21 14:43:10 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -137,6 +137,7 @@ void Client::doOnRead(WebServ &webServ)
 		}
 		_serverInfoCurr = getCorrectServer();
 		//dans le server infocurr, gets the servername from the list if exists
+		// TODO(eric)
 		std::vector<std::string> serversName = _serverInfoCurr.getName();
 		std::vector<std::string>::iterator its = serversName.begin();
 		for (;its !=serversName.end();its++)
