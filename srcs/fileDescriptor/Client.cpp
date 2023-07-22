@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/22 20:17:13 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/22 20:43:50 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,9 +104,8 @@ ServerConf const &Client::getServerInfo() const
 /**
  * @brief Read data in fd and try to construct the request. While request is
  * complete retrive correct server information and update fd to EPOLLOUT
- * @param webServ Reference to webServ
  */
-void Client::doOnRead()
+void	Client::doOnRead()
 {
 	char buffer[BUFFER_SIZE];
 	ssize_t n;
@@ -153,7 +152,8 @@ void Client::doOnRead()
 				break;
 			}
 		}
-		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+	}
 }
 
 
@@ -161,7 +161,7 @@ void Client::doOnRead()
  * @brief Try to write response in fd if is ready otherwise create response
  * @param webServ Reference to webServ
  */
-void Client::doOnWrite()
+void	Client::doOnWrite()
 {
 	if (_responseReady)
 	{
@@ -265,7 +265,8 @@ void Client::getResponse()
 }
 
 ServerConf Client::getCorrectServer()
-{//TODO checker si il n'y a pas de nom de server
+{
+	//TODO checker si il n'y a pas de nom de server
 	std::vector<ServerConf>::iterator it = _serverInfo.begin();
 	for (; it != _serverInfo.end(); it++)
 	{
@@ -283,17 +284,18 @@ ServerConf Client::getCorrectServer()
 	{
 		std::vector<Location>::const_reverse_iterator it2 = it->getLocation().rbegin();
 		for (; it2 != it->getLocation().rend(); it2++)
-			{
+		{
 				int result = std::strncmp(
 				(_request.getPathRequest() + "/").c_str(), 
 				it2->getUri().c_str(), 
 				it2->getUri().size());
 				if (result == 0)
 					return (*it); 
-			}
+		}
 	}
 	return (*(_serverInfo.begin()));
 }
+
 
 void	Client::handleScript(std::string const & fullPath)
 {
@@ -316,6 +318,7 @@ void	Client::handleScript(std::string const & fullPath)
 	_webServ->updateEpoll(_fd, 0, EPOLL_CTL_MOD);
 }
 
+
 void Client::handleException(std::exception &exception)
 {
 	DEBUG_COUT(exception.what());
@@ -329,6 +332,7 @@ void Client::handleException(std::exception &exception)
 		errorResponse(INTERNAL_SERVER_ERROR);
 	}
 }
+
 
 Location const *Client::getLocationBlock()
 {

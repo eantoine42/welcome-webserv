@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Cgi.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/22 20:07:04 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/22 20:45:40 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -221,7 +221,7 @@ char **     Cgi::mapCgiParams()
         std::string("SCRIPT_NAME=") + "index.php",
         std::string("PHP_SELF=") + "index.php",
         std::string("SCRIPT_FILENAME=") + cwd + "/" + _fullPath,
-        std::string("SERVER_NAME=") + serverInfo.getName(),
+        std::string("SERVER_NAME=") + serverInfo.getName()[0], // TODO: Set dynamically
         std::string("SERVER_PORT=") + StringUtils::intToString(serverInfo.getPort()),
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),

@@ -217,7 +217,7 @@ void Location::setLocRoot(std::vector<std::string> token)
 {
 	if (token.size() > 2)
 		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : Only one root allowed"));
-	_root = token[1].erase(token[1].size() - 1);
+	_locRoot = token[1].erase(token[1].size() - 1);
 }
 
 void Location::setUploadDir(std::vector<std::string> token)
