@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/22 00:09:36 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/22 20:07:04 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,12 +116,11 @@ int     Cgi::run()
 {
     int pipeToCgi[2];
     int pipeFromCgi[2];
-    int pid;
 
-    if ((pid = initChildProcess(pipeToCgi, pipeFromCgi)) < 0)
+    if ((_pidChild = initChildProcess(pipeToCgi, pipeFromCgi)) < 0)
         return (-1);
 
-    if (pid == 0)
+    if (_pidChild == 0)
         runChildProcess(pipeToCgi, pipeFromCgi);
     
     close(pipeFromCgi[1]);

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/22 00:07:14 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/22 20:17:13 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,8 +75,9 @@ Client::~Client()
  ***************/
 
 Client::Client(int fd, WebServ & webServ, std::vector<ServerConf> const &serverInfo)
-	: AFileDescriptor(fd, webServ),
-	  _serverInfo(serverInfo)
+	: 	AFileDescriptor(fd, webServ),
+	  	_serverInfo(serverInfo),
+		_responseReady(false)
 {
 }
 /******************************************************************************/
@@ -122,9 +123,9 @@ void Client::doOnRead()
 		try
 		{
 			if (_request.getHttpMethod().empty())
-				searchRequestLine();
+				_request.handleRequestLine(_rawData);
 			if (_request.getHeaders().empty())
-				searchHeaders();
+				_request.handleHeaders(_rawData);
 			if (_request.hasMessageBody())
 				_request.handleMessageBody(_rawData);
 		}
@@ -151,7 +152,7 @@ void Client::doOnRead()
  */
 void Client::doOnWrite()
 {
-	if (_responseReady == true)
+	if (_responseReady)
 	{
 		send(_fd, &(_rawData[0]), _rawData.size(), 0);
 
@@ -171,7 +172,7 @@ void Client::doOnWrite()
 	try
 	{
 		handleRequest(getLocationBlock());
-		if (_responseReady == true)
+		if (_responseReady)
 			_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 	catch (std::exception &exception)
@@ -206,30 +207,6 @@ void Client::responseCgi(std::string const &response)
 /*****************
  * PRIVATE METHODS
  *****************/
-
-void Client::searchRequestLine()
-{
-	std::vector<unsigned char>::iterator it;
-	unsigned char src[] = {'\r', '\n'};
-
-	it = std::search(_rawData.begin(), _rawData.end(), src, src + 2);
-	if (it == _rawData.end())
-		throw RequestUncomplete();
-	_request.handleRequestLine(std::string(_rawData.begin(), it));
-	_rawData.erase(_rawData.begin(), it);
-}
-
-void Client::searchHeaders()
-{
-	std::vector<unsigned char>::iterator it;
-	unsigned char src[] = {'\r', '\n', '\r', '\n'};
-
-	it = std::search(_rawData.begin(), _rawData.end(), src, src + 4);
-	if (it == _rawData.end())
-		throw RequestUncomplete();
-	_request.handleHeaders(std::string(_rawData.begin(), it));
-	_rawData.erase(_rawData.begin(), it + 4);
-}
 
 void Client::errorResponse(status_code_t status)
 {
@@ -356,11 +333,10 @@ void	Client::handleRequest(Location const * location)
 		path = "";
 
 	std::vector<std::string> methods;
-	methods.push_back("GET");
 	if (location)
 		methods = location->getAllowMethod();
 
-	if (std::find(methods.begin(), methods.end(), method) == methods.end())
+	if (!methods.empty() && std::find(methods.begin(), methods.end(), method) == methods.end())
 		throw RequestError(METHOD_NOT_ALLOWED);
 
 	if (method == "GET")
@@ -380,7 +356,8 @@ void	Client::handleRequest(Location const * location)
 		}
 	}
 
-	if (fullPath.substr(fullPath.size() - 4) == ".php") // TODO: Refacto
+	size_t point = fullPath.rfind(".");
+	if (point != std::string::npos && fullPath.substr(point + 1) == "php")
 		return handleScript(fullPath);
 	throw RequestError(METHOD_NOT_ALLOWED);
 	/*if (method == "GET")

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:21:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/21 14:20:14 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/22 20:22:55 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 * CANNONICAL FORM
 *****************/
 
-Request::Request()
+Request::Request() : _hasMessageBody(false)
 {}
 
 Request::Request(Request const & copy)
@@ -31,6 +31,7 @@ Request::Request(Request const & copy)
 		_httpVersion(copy._httpVersion),
 		_headers(copy._headers),
 		_messageBody(copy._messageBody),
+		_hasMessageBody(copy._hasMessageBody),
 		_encode(copy._encode),
 		_bodySize(copy._bodySize)
 {}
@@ -43,7 +44,7 @@ Request & Request::operator=(Request const & rhs)
 		_pathRequest = rhs._pathRequest;
 		_httpVersion = rhs._httpVersion;
 		_headers = rhs._headers;
-		_messageBody = rhs._messageBody;
+		_hasMessageBody = rhs._hasMessageBody;
 		_encode = rhs._encode;
 		_bodySize = rhs._bodySize;
 	}
@@ -129,11 +130,21 @@ void	Request::setHeaders(std::map<std::string, std::string> const & headers)
 * PUBLIC METHODS
 ****************/
 
-/// @brief 
-/// @param requestLine 
-/// @return 
-void	Request::handleRequestLine(std::string requestLine)
+
+/**
+ * @brief 
+ * @param rawData 
+ */
+void	Request::handleRequestLine(std::vector<unsigned char> & rawData)
 {
+	std::vector<unsigned char>::iterator it;
+	unsigned char src[] = {'\r', '\n'};
+
+	it = std::search(rawData.begin(), rawData.end(), src, src + 2);
+	if (it == rawData.end())
+		throw RequestUncomplete();
+
+	std::string requestLine(rawData.begin(), it);
 	std::vector<std::string> vec = StringUtils::splitString(requestLine, " ");
 	if (vec.size() != 3)
 		throw RequestError(BAD_REQUEST);
@@ -141,12 +152,8 @@ void	Request::handleRequestLine(std::string requestLine)
 	_pathRequest = vec[1];
 	_httpVersion = vec[2];
 
-	size_t lastSlash = _pathRequest.rfind("/");
-	size_t query = _pathRequest.find("?");
-	size_t extension;
-
 	if (HttpUtils::isMethodAllowed(_httpMethod) == false)
-		throw RequestError(BAD_REQUEST);
+		throw RequestError(METHOD_NOT_ALLOWED);
 	if (_httpVersion.compare("HTTP/1.1") != 0)
 		throw RequestError(BAD_REQUEST);
 	if (_pathRequest[0] != '/')
@@ -155,23 +162,30 @@ void	Request::handleRequestLine(std::string requestLine)
 	if (_httpMethod.compare("POST") == 0)
 		_hasMessageBody = true;
 
-	if (query == std::string::npos)
-		_fileName = _pathRequest.substr(lastSlash + 1);
-	else
+	size_t query = _pathRequest.find("?");
+	if (query != std::string::npos)
 	{
-		_fileName = _pathRequest.substr(lastSlash + 1, query - lastSlash - 1);
 		_queryParam = _pathRequest.substr(query + 1);
 		_pathRequest = _pathRequest.substr(0, query);
 	}
-	if ((extension = _fileName.rfind(".")) != std::string::npos)
-		_extension = _fileName.substr(extension + 1);
+	rawData.erase(rawData.begin(), it);
 }
 
-/// @brief 
-/// @param headers 
-/// @return 
-void	Request::handleHeaders(std::string headers)
-{
+
+/**
+ * @brief 
+ * @param rawData 
+ */
+void	Request::handleHeaders(std::vector<unsigned char> & rawData)
+{	
+	std::vector<unsigned char>::iterator ite;
+	unsigned char src[] = {'\r', '\n', '\r', '\n'};
+
+	ite = std::search(rawData.begin(), rawData.end(), src, src + 4);
+	if (ite == rawData.end())
+		throw RequestUncomplete();
+
+	std::string headers(rawData.begin(), ite);
 	std::vector<std::string> vec = StringUtils::splitString(headers, "\r\n");
 	std::vector<std::string>::iterator it = vec.begin();
 
@@ -201,12 +215,14 @@ void	Request::handleHeaders(std::string headers)
 		if (_encode == false)
 			_bodySize = atoi(length->second.c_str()); // TODO: Check if size is an integer
 	}
-		
+	rawData.erase(rawData.begin(), ite + 4);
 }
 
-/// @brief 
-/// @param messageBody 
-/// @return 
+
+/**
+ * @brief 
+ * @param rawData 
+ */
 void	Request::handleMessageBody(std::vector<unsigned char> & rawData)
 {
 	if (_encode == false)
@@ -217,6 +233,11 @@ void	Request::handleMessageBody(std::vector<unsigned char> & rawData)
 			throw RequestUncomplete();
 	}
 }
+/******************************************************************************/
+
+/****************
+* FUNCTIONS
+****************/
 
 std::ostream    &operator<<(std::ostream & o, Request const & r)
 {
