@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:39:09 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 09:26:29 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/22 00:03:37 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 #include "AFileDescriptor.hpp"
 #include <vector>
+#include <string>
 
 class Client;
 
@@ -24,6 +25,7 @@ class Cgi : public AFileDescriptor
 
         std::vector<unsigned char>	_rawData;
         Client *                    _clientInfo;
+        std::string                 _fullPath;
         int                         _fdRead;
         int                         _fdWrite;
         int                         _pidChild;
@@ -39,18 +41,17 @@ class Cgi : public AFileDescriptor
 		Cgi & operator=(Cgi const & rhs);
 		virtual ~Cgi();
 
-        Cgi(Client & client);
+        Cgi(WebServ & webServ, Client & client, std::string const & fullPath);
 
         int     getReadFd() const;
         int     getWriteFd() const;
         int     getPidChild() const;
 
-       	virtual void doOnRead(WebServ & webServ);
-		virtual void doOnWrite(WebServ & webServ);
-		virtual void doOnError(WebServ & webServ, uint32_t event);
+       	virtual void doOnRead();
+		virtual void doOnWrite();
+		virtual void doOnError(uint32_t event);
 
         int     run();
-
 
 };
 

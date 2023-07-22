@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 21:15:38 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/21 23:27:06 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -188,7 +188,7 @@ void    Parser::createServerSockets(WebServ & webServ) const
 		if (listen(socketFd, MAX_CLIENT))
 			throw(SetServerException("Problem with listen")); 
 
-		webServ.addFd(socketFd, new Server(socketFd, it->second));  
+		webServ.addFd(socketFd, new Server(socketFd, webServ, it->second));  
     }
 }
 

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 18:20:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/03 21:08:26 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/22 20:16:19 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,8 +63,8 @@ class Request
 		void	setHeaders(std::map<std::string, std::string> const & headers);
 
 		// Members methods
-		void	handleRequestLine(std::string requestLine);
-		void	handleHeaders(std::string headers);
+		void	handleRequestLine(std::vector<unsigned char> & rawData);
+		void	handleHeaders(std::vector<unsigned char> & rawData);
 		void	handleMessageBody(std::vector<unsigned char> & rawData);
 
 };

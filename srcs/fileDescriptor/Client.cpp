@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/20 18:48:42 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/22 20:17:13 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "Response.hpp"
 #include "Exception.hpp"
 #include "WebServ.hpp"
+#include "FileUtils.hpp"
 
 #include <cstddef>
 #include <cstring> // strncmp
@@ -52,6 +53,7 @@ Client &Client::operator=(Client const &rhs)
 	if (this != &rhs)
 	{
 		_fd = rhs._fd;
+		_webServ = rhs._webServ;
 		_rawData = rhs._rawData;
 		_serverInfo = rhs._serverInfo;
 		_serverInfoCurr = rhs._serverInfoCurr;
@@ -71,9 +73,11 @@ Client::~Client()
 /**************
  * CONSTRUCTORS
  ***************/
-Client::Client(int fd, std::vector<ServerConf> const &serverInfo)
-	: 	AFileDescriptor(fd),
-		_serverInfo(serverInfo)
+
+Client::Client(int fd, WebServ & webServ, std::vector<ServerConf> const &serverInfo)
+	: 	AFileDescriptor(fd, webServ),
+	  	_serverInfo(serverInfo),
+		_responseReady(false)
 {
 }
 /******************************************************************************/
@@ -102,7 +106,7 @@ ServerConf const &Client::getServerInfo() const
  * complete retrive correct server information and update fd to EPOLLOUT
  * @param webServ Reference to webServ
  */
-void Client::doOnRead(WebServ &webServ)
+void Client::doOnRead()
 {
 	char buffer[BUFFER_SIZE];
 	ssize_t n;
@@ -113,15 +117,15 @@ void Client::doOnRead(WebServ &webServ)
 	if (n < 0) // Try to read next time fd is NON_BLOCK and we can't check errno
 		return;
 	else if (n == 0) // Client close connection
-		webServ.removeFd(_fd);
+		_webServ->removeFd(_fd);
 	else
 	{
 		try
 		{
 			if (_request.getHttpMethod().empty())
-				searchRequestLine();
+				_request.handleRequestLine(_rawData);
 			if (_request.getHeaders().empty())
-				searchHeaders();
+				_request.handleHeaders(_rawData);
 			if (_request.hasMessageBody())
 				_request.handleMessageBody(_rawData);
 		}
@@ -132,7 +136,7 @@ void Client::doOnRead(WebServ &webServ)
 		catch (std::exception &exception)
 		{
 			handleException(exception);
-			webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+			_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 			return;
 		}
 		_serverInfoCurr = getCorrectServer();
@@ -149,69 +153,42 @@ void Client::doOnRead(WebServ &webServ)
 				break;
 			}
 		}
-	}
 		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
+
 
 /**
  * @brief Try to write response in fd if is ready otherwise create response
  * @param webServ Reference to webServ
  */
-void Client::doOnWrite(WebServ & webServ)
+void Client::doOnWrite()
 {
-	if (_responseReady == true)
+	if (_responseReady)
 	{
 		send(_fd, &(_rawData[0]), _rawData.size(), 0);
 
 		// Reset client field for next request
-		webServ.updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
+		_webServ->updateEpoll(_fd, EPOLLIN, EPOLL_CTL_MOD);
 		_responseReady = false;
 		_request = Request();
 		if (_cgi.getPidChild() != -1)
 		{
-			webServ.eraseFd(_cgi.getReadFd());
-			webServ.eraseFd(_cgi.getWriteFd());
+			_webServ->eraseFd(_cgi.getReadFd());
+			_webServ->eraseFd(_cgi.getWriteFd());
 			_cgi = Cgi();
 		}
 		return;
 	}
 
-	Location const * location = getLocationBlock();
-	std::string	path;
-	std::string	request; 
-
-	if (location)
+	try
 	{
-		if (location->getUseUri() && location->getUri()[0] == '/')
-			path = location->getLocRoot() + location->getUri();
-		else if (!location->getUseUri() && location->getUri()[0] == '/')
-			path = location->getLocRoot();
-		else
-			path = location->getUri();
-		request = _request.getPathRequest().substr(location->getUri().size() - 1);
-		std::cout << "path is " << path << std::endl;		
-		std::cout << "request is " << request << std::endl;		
-
+		handleRequest(getLocationBlock());
+		if (_responseReady)
+			_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
-	else
+	catch (std::exception &exception)
 	{
-
-	}
-
-	if (_request.getExtension().compare("php") == 0)
-	{
-		handleScript(webServ);
-	}
-	else
-	{
-		if (location)
-			std::cout << "Location block is -> " << location->getUri() << std::endl;
-		else
-			std::cout << "Take root server config" << std::endl;
-		getResponse();
-		// postResponse();
-		// deleteResponse();
-		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+		handleException(exception);
 	}
 }
 
@@ -220,10 +197,10 @@ void Client::doOnWrite(WebServ & webServ)
  * @param webServ
  * @param event
  */
-void Client::doOnError(WebServ &webServ, uint32_t event)
+void Client::doOnError(uint32_t event)
 {
 	std::cout << "Client on error, event = " << event << std::endl;
-	webServ.removeFd(_fd);
+	_webServ->removeFd(_fd);
 }
 
 /**
@@ -241,30 +218,6 @@ void Client::responseCgi(std::string const &response)
 /*****************
  * PRIVATE METHODS
  *****************/
-
-void Client::searchRequestLine()
-{
-	std::vector<unsigned char>::iterator it;
-	unsigned char src[] = {'\r', '\n'};
-
-	it = std::search(_rawData.begin(), _rawData.end(), src, src + 2);
-	if (it == _rawData.end())
-		throw RequestUncomplete();
-	_request.handleRequestLine(std::string(_rawData.begin(), it));
-	_rawData.erase(_rawData.begin(), it);
-}
-
-void Client::searchHeaders()
-{
-	std::vector<unsigned char>::iterator it;
-	unsigned char src[] = {'\r', '\n', '\r', '\n'};
-
-	it = std::search(_rawData.begin(), _rawData.end(), src, src + 4);
-	if (it == _rawData.end())
-		throw RequestUncomplete();
-	_request.handleHeaders(std::string(_rawData.begin(), it));
-	_rawData.erase(_rawData.begin(), it + 4);
-}
 
 void Client::errorResponse(status_code_t status)
 {
@@ -342,36 +295,34 @@ ServerConf Client::getCorrectServer()
 	return (*(_serverInfo.begin()));
 }
 
-
-void	Client::handleScript(WebServ & webServ)
+void	Client::handleScript(std::string const & fullPath)
 {
-	_cgi = Cgi(*this);
+	_cgi = Cgi(*_webServ, *this, fullPath);
 
 	if (_cgi.run() < 0)
 	{
 		errorResponse(INTERNAL_SERVER_ERROR);
-		webServ.updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
+		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 		return;
 	}
 
-	webServ.addFd(_cgi.getWriteFd(), &_cgi);
-	webServ.updateEpoll(_cgi.getWriteFd(), EPOLLOUT, EPOLL_CTL_ADD);
+	_webServ->addFd(_cgi.getWriteFd(), &_cgi);
+	_webServ->updateEpoll(_cgi.getWriteFd(), EPOLLOUT, EPOLL_CTL_ADD);
 
 	// Set NULL at AFileDescriptor in order to avoir double free if error occur
-	webServ.addFd(_cgi.getReadFd(), &_cgi);
-	webServ.updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_ADD);
+	_webServ->addFd(_cgi.getReadFd(), &_cgi);
+	_webServ->updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_ADD);
 
-	webServ.updateEpoll(_fd, 0, EPOLL_CTL_MOD);
+	_webServ->updateEpoll(_fd, 0, EPOLL_CTL_MOD);
 }
-
 
 void Client::handleException(std::exception &exception)
 {
 	DEBUG_COUT(exception.what());
 	try
 	{
-		dynamic_cast<RequestError &>(exception);
-		errorResponse(BAD_REQUEST);
+		RequestError error = dynamic_cast<RequestError &>(exception);
+		errorResponse(error.getStatusCode());
 	}
 	catch (std::exception &exception)
 	{
@@ -379,19 +330,91 @@ void Client::handleException(std::exception &exception)
 	}
 }
 
-Location const * Client::getLocationBlock()
+Location const *Client::getLocationBlock()
 {
 	std::vector<Location>::const_reverse_iterator it = _serverInfoCurr.getLocation().rbegin();
 
 	for (; it != _serverInfoCurr.getLocation().rend(); it++)
 	{
 		int result = std::strncmp(
-			(_request.getPathRequest() + "/").c_str(), 
-			it->getUri().c_str(), 
-			it->getUri().size()
-		);
+			(_request.getPathRequest() + "/").c_str(),
+			it->getUri().c_str(),
+			it->getUri().size());
 		if (result == 0)
-			return &(*it); 
+			return &(*it);
 	}
 	return (NULL);
 }
+
+void	Client::handleRequest(Location const * location)
+{
+	std::string path = _serverInfoCurr.getRoot();
+	std::string request = _request.getPathRequest();
+	std::string fullPath = path + request;
+	std::string method = _request.getHttpMethod();
+
+	if (location && location->getUri()[0] != '/')
+		path = "";
+
+	std::vector<std::string> methods;
+	if (location)
+		methods = location->getAllowMethod();
+
+	if (!methods.empty() && std::find(methods.begin(), methods.end(), method) == methods.end())
+		throw RequestError(METHOD_NOT_ALLOWED);
+
+	if (method == "GET")
+	{
+		if (location)
+		{
+			if (std::strncmp(
+					(request + "/").c_str(),
+					location->getUri().c_str(),
+					location->getUri().size()) == 0)
+				fullPath = searchIndexFile(fullPath, location->getIndex(), location->getAutoindex());
+		}
+		else
+		{
+			if (request == "/")
+				fullPath = searchIndexFile(fullPath, _serverInfoCurr.getIndex(), _serverInfoCurr.getAutoindex());
+		}
+	}
+
+	size_t point = fullPath.rfind(".");
+	if (point != std::string::npos && fullPath.substr(point + 1) == "php")
+		return handleScript(fullPath);
+	throw RequestError(METHOD_NOT_ALLOWED);
+	/*if (method == "GET")
+		return Response::getResponse(autoindex);
+	if (method == "POST")
+		return Response::postResponse(uploadDir);
+	if (method == "DELETE")
+		return Response::deleteResponse();*/
+}
+
+std::string Client::searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex)
+{
+	std::vector<std::string>::const_iterator it = indexs.begin();
+	for (; it != indexs.end(); it++)
+	{
+		if (!FileUtils::fileExists((path + "/" + *it).c_str()))
+			continue;
+		if (!FileUtils::fileRead((path + *it).c_str()))
+			throw RequestError(FORBIDDEN);
+		else
+			return path + *it;
+	}
+
+	// otherwise check if autoindex is on
+	if (!autoindex)
+		throw RequestError(FORBIDDEN);
+	return path;
+}
+
+/*void Client::handlePostRequest(Location *location)
+{
+}
+
+void Client::handleDeleteRequest(Location *location)
+{
+}*/

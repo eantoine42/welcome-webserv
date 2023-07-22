@@ -39,7 +39,6 @@ Location::Location(int port, int loc_index, std::map<std::string, std::string> c
 	_allow_method.push_back("GET");
 	_allow_method.push_back("DELETE");
 	_upload_dir = "";
-	_useUri = 1;
 }
 
 Location::Location()
@@ -57,7 +56,8 @@ Location::Location(const Location &src)
 	  _return(src._return),
 	  _client_body_size(src._client_body_size),
 	  _error_pages(src._error_pages),
-	  _uri(src._uri) {}
+	  _uri(src._uri)
+{}
 
 Location &Location::operator=(const Location &src)
 {
@@ -97,7 +97,6 @@ std::string const &Location::getUploadDir() const { return _upload_dir; }
 std::map<std::string, std::string> const &Location::getCgi() const { return _cgi; }
 long int const &Location::getClientBodySize() const { return (_client_body_size); }
 std::string const &Location::getError() const { return (_error_pages); }
-bool const &Location::getUseUri() const{ return (_useUri);}
 
 void Location::setLocation(const std::string &str, int &count)
 {
@@ -218,8 +217,7 @@ void Location::setLocRoot(std::vector<std::string> token)
 {
 	if (token.size() > 2)
 		throw(ConfFileParseError("Location bloc [" + StringUtils::intToString(_loc_index) + "] : Only one root allowed"));
-	_locRoot = token[1].erase(token[1].size() - 1);
-	_useUri = 0;
+	_root = token[1].erase(token[1].size() - 1);
 }
 
 void Location::setUploadDir(std::vector<std::string> token)

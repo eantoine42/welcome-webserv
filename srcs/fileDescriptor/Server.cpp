@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/19 18:05:52 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/18 12:09:12 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/21 23:25:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,9 @@
 #include <sys/epoll.h>	// epoll_ctl
 #include <cerrno>		// errno
 
+/*****************
+ * CANNONICAL FORM
+ *****************/
 
 Server::Server(void) : AFileDescriptor()
 {}
@@ -37,6 +40,7 @@ Server &	Server::operator=(Server const &src)
 	if (this != &src)
 	{
 		_fd = src._fd;
+		_webServ = src._webServ;
 		_serverConfs = src._serverConfs;
 	}
 	return *this;
@@ -44,13 +48,27 @@ Server &	Server::operator=(Server const &src)
 
 Server::~Server()
 {}
+/******************************************************************************/
 
-Server::Server(int fd, std::vector<ServerConf> const & serverConfs)
-	: 	AFileDescriptor(fd),
+/**************
+ * CONSTRUCTORS
+ ***************/
+
+Server::Server(int fd, WebServ & webServ, std::vector<ServerConf> const & serverConfs)
+	: 	AFileDescriptor(fd, webServ),
 		_serverConfs(serverConfs)
 {}
+/******************************************************************************/
 
-void	Server::doOnRead(WebServ & webServ)
+/****************
+ * PUBLIC METHODS
+ ****************/
+
+/**
+ * @brief 
+ * @param webServ 
+ */
+void	Server::doOnRead()
 {
     int		cs;
 
@@ -65,7 +83,7 @@ void	Server::doOnRead(WebServ & webServ)
 
 	try
 	{
-		webServ.updateEpoll(cs, EPOLLIN, EPOLL_CTL_ADD);
+		_webServ->updateEpoll(cs, EPOLLIN, EPOLL_CTL_ADD);
 	} 
 	catch (EpollInitError & e)
 	{
@@ -73,17 +91,25 @@ void	Server::doOnRead(WebServ & webServ)
 		throw e;
 	}
 
-	webServ.addFd(cs, new Client(cs, _serverConfs));
-	webServ.addClientTimes(std::make_pair(cs, TimeUtils::getTimeOfDayMs()));
+	_webServ->addFd(cs, new Client(cs, *_webServ, _serverConfs));
+	_webServ->addClientTimes(std::make_pair(cs, TimeUtils::getTimeOfDayMs()));
 }
 
-void	Server::doOnWrite(WebServ & webServ)
+
+/**
+ * @brief 
+ */
+void	Server::doOnWrite()
 {
-	(void) webServ;
 }
 
-void	Server::doOnError(WebServ & webServ, uint32_t event)
+
+/**
+ * @brief 
+ * @param event 
+ */
+void	Server::doOnError(uint32_t event)
 {
-	(void) webServ;
 	std::cout << "Client on error, event = " << event << std::endl;
 }
+/******************************************************************************/

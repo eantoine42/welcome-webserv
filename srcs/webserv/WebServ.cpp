@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/19 09:07:24 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/21 23:27:41 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,11 +140,11 @@ void    WebServ::start()
 			AFileDescriptor *	aFd = _mapFd[fd];
 			
 			if (event & EPOLLIN)
-				aFd->doOnRead(*this);
+				aFd->doOnRead();
 			if (event & EPOLLOUT)
-				aFd->doOnWrite(*this);
+				aFd->doOnWrite();
 			if (!(event & EPOLLIN) && !(event & EPOLLOUT))
-				aFd->doOnError(*this, event);
+				aFd->doOnError(event);
 		}
 		//handleTimeout();
 	}

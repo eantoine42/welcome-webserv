@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/20 16:35:53 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/21 15:00:59 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,6 @@ class Location
 		long int							_client_body_size;
 		std::string							_error_pages;
 		std::string							_uri;
-		bool								_useUri;
 
 
 		/*
@@ -94,7 +93,6 @@ class Location
 		long int							const &getClientBodySize() const;
 		std::string							const &getError() const;
 		std::map<std::string, std::string>	const &getCgi() const;
-		bool								const &getUseUri() const;
 		
 		struct location_instruction_tab_entry_t 
 		{

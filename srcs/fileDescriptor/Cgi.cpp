@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/20 18:40:49 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/22 20:07:04 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "Debugger.hpp"
 #include "WebServ.hpp"
 #include "Client.hpp"
+#include "StringUtils.hpp"
 
 #include <algorithm> // replace
 #include <cstring>   // toupper
@@ -28,7 +29,7 @@
  *****************/
 
 Cgi::Cgi(void) 
-    :   AFileDescriptor(-1),
+    :   AFileDescriptor(),
         _clientInfo(NULL),
         _fdRead(-1),
         _fdWrite(-1),
@@ -40,6 +41,7 @@ Cgi::Cgi(Cgi const &copy)
     : AFileDescriptor(copy),
       _rawData(copy._rawData),
       _clientInfo(copy._clientInfo),
+      _fullPath(copy._fullPath),
       _fdRead(copy._fdRead),
       _fdWrite(copy._fdWrite),
       _pidChild(copy._pidChild)
@@ -51,8 +53,10 @@ Cgi &Cgi::operator=(Cgi const &rhs)
     if (this != &rhs)
     {
         _fd = rhs._fd;
+        _webServ = rhs._webServ;
         _rawData = rhs._rawData;
         _clientInfo = rhs._clientInfo;
+        _fullPath = rhs._fullPath;
         _fdRead = rhs._fdRead;
         _fdWrite = rhs._fdWrite;
         _pidChild = rhs._pidChild;
@@ -69,9 +73,10 @@ Cgi::~Cgi()
 /**************
  * CONSTRUCTORS
  ***************/
-Cgi::Cgi(Client & client) 
-    :   AFileDescriptor(-1),
+Cgi::Cgi(WebServ & webServ, Client & client, std::string const & fullPath) 
+    :   AFileDescriptor(-1, webServ),
         _clientInfo(&client),
+        _fullPath(fullPath),
         _fdRead(-1),
         _fdWrite(-1),
         _pidChild(-1)
@@ -111,12 +116,11 @@ int     Cgi::run()
 {
     int pipeToCgi[2];
     int pipeFromCgi[2];
-    int pid;
 
-    if ((pid = initChildProcess(pipeToCgi, pipeFromCgi)) < 0)
+    if ((_pidChild = initChildProcess(pipeToCgi, pipeFromCgi)) < 0)
         return (-1);
 
-    if (pid == 0)
+    if (_pidChild == 0)
         runChildProcess(pipeToCgi, pipeFromCgi);
     
     close(pipeFromCgi[1]);
@@ -137,7 +141,7 @@ int     Cgi::run()
  * @brief Read data from cgi and construct response if EOF is reached
  * @param webServ 
  */
-void Cgi::doOnRead(WebServ &webServ)
+void Cgi::doOnRead()
 {
     unsigned char buffer[BUFFER_SIZE];
     ssize_t n;
@@ -145,6 +149,7 @@ void Cgi::doOnRead(WebServ &webServ)
 
     if ((n = read(_fdRead, buffer, BUFFER_SIZE)) > 0)
         _rawData.insert(_rawData.end(), buffer, buffer + n);
+
     if (n == 0)
     {
         std::string str(_rawData.begin(), _rawData.end());
@@ -153,10 +158,10 @@ void Cgi::doOnRead(WebServ &webServ)
         str = Response::cgiSimpleResponse(str);
         _clientInfo->responseCgi(str);
 
-        webServ.updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
+        _webServ->updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
         close(_fdRead);
 
-        webServ.updateEpoll(_clientInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
+        _webServ->updateEpoll(_clientInfo->getFd(), EPOLLOUT, EPOLL_CTL_MOD);
     }
 }
 
@@ -165,16 +170,16 @@ void Cgi::doOnRead(WebServ &webServ)
  * @brief Send data to CGI and handle fd
  * @param webServ 
  */
-void Cgi::doOnWrite(WebServ & webServ)
+void Cgi::doOnWrite()
 {
     std::vector<unsigned char> body =  _clientInfo->getRequest().getMessageBody();   
 
     write(_fdWrite, &body[0], body.size());
 
-    webServ.updateEpoll(_fdWrite, 0, EPOLL_CTL_DEL);
+    _webServ->updateEpoll(_fdWrite, 0, EPOLL_CTL_DEL);
     close(_fdWrite);
 
-    webServ.updateEpoll(_fdRead, EPOLLIN, EPOLL_CTL_MOD);
+    _webServ->updateEpoll(_fdRead, EPOLLIN, EPOLL_CTL_MOD);
 }
 
 
@@ -183,10 +188,10 @@ void Cgi::doOnWrite(WebServ & webServ)
  * @param webServ 
  * @param event 
  */
-void Cgi::doOnError(WebServ &webServ, uint32_t event)
+void Cgi::doOnError(uint32_t event)
 {
     std::cout << "Client on error, event = " << event << std::endl;
-    this->doOnRead(webServ);
+    this->doOnRead();
 }
 /******************************************************************************/
 
@@ -196,30 +201,28 @@ void Cgi::doOnError(WebServ &webServ, uint32_t event)
 
 char **     Cgi::mapCgiParams()
 {
-    ServerConf const &serverInfo = _clientInfo->getServerInfo();
-    Request const &request = _clientInfo->getRequest();
-    std::map<std::string, std::string> const &headers = request.getHeaders();
+    ServerConf const & serverInfo = _clientInfo->getServerInfo();
+    Request const & request = _clientInfo->getRequest();
+    std::map<std::string, std::string> const & headers = request.getHeaders();
     char *cwd = get_current_dir_name();
 
     std::string tab[19] = {
-        std::string("AUTH_TYPE=") + "",
+        std::string("AUTH_TYPE="),
         std::string("CONTENT_LENGTH=") + ((headers.find("Content-Length") != headers.end()) ? headers.find("Content-Length")->second : ""),
         std::string("CONTENT_TYPE=") + (headers.find("Content-Type") != headers.end() ? headers.find("Content-Type")->second : ""),
         std::string("GATEWAY_INTERFACE=CGI/1.1"),
         std::string("PATH_INFO=/"),
         std::string("PATH_TRANSLATED="),
-        std::string("QUERY_STRING=") + request.getQueryParam(), // Set query string in request object
-        std::string("REMOTE_ADDR="),                            // Set remote addr in request object
+        std::string("QUERY_STRING=") + request.getQueryParam(),
+        std::string("REMOTE_ADDR="),
         std::string("REMOTE_HOST="),
         std::string("REMOTE_IDENT="),
-       // std::string("REMOTE_USER="),
         std::string("REQUEST_METHOD=") + request.getHttpMethod(),
-        std::string("SCRIPT_NAME=") + request.getFileName(),
-        std::string("PHP_SELF=") + request.getFileName(),
-        //std::string("SCRIPT_FILENAME=") + cwd + "/" + request.getPathRequest(),
-        std::string("SCRIPT_FILENAME=") + cwd + "/www" + request.getPathRequest(),
-        std::string("SERVER_NAME=") + serverInfo.getName()[0], // Get to header host ?
-        std::string("SERVER_PORT=4242"),                    // TODO USE ITOA
+        std::string("SCRIPT_NAME=") + "index.php",
+        std::string("PHP_SELF=") + "index.php",
+        std::string("SCRIPT_FILENAME=") + cwd + "/" + _fullPath,
+        std::string("SERVER_NAME=") + serverInfo.getName(),
+        std::string("SERVER_PORT=") + StringUtils::intToString(serverInfo.getPort()),
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),
         std::string("REQUEST_URI=") + request.getPathRequest()
@@ -300,7 +303,6 @@ void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
 
     char **envCgi = mapCgiParams();
 
-    // TODO: MAP FD
     close(pipeToCgi[1]);
     close(pipeFromCgi[0]);
     dup2(pipeToCgi[0], STDIN_FILENO);
@@ -311,6 +313,9 @@ void    Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     delete[] cgiPathCopy;
     delete[] scriptCopy;
     delete[] argv;
+    for (int i = 0; envCgi[i]; i++)
+        delete envCgi[i];
+    delete[] envCgi;
     close(pipeFromCgi[0]);
     close(pipeFromCgi[1]);
     close(pipeToCgi[0]);

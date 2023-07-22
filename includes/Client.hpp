@@ -33,12 +33,12 @@ class Client : public AFileDescriptor
 
 		Client(void);
 
-		void		searchRequestLine();
-		void		searchHeaders();
-		ServerConf	getCorrectServer();
-		void		handleScript(WebServ & webServ);
-		void		handleException(std::exception & exception);
+		ServerConf			getCorrectServer();
+		void				handleScript(std::string const & fullPath);
+		void				handleException(std::exception & exception);
 		Location const *	getLocationBlock();
+		void				handleRequest(Location const * location);
+		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
 
 	public:
 		
@@ -47,16 +47,16 @@ class Client : public AFileDescriptor
 		virtual ~Client();
 
 		// Constructors
-		Client(int fd, std::vector<ServerConf> const & serverInfo);
+		Client(int fd, WebServ & webServ, std::vector<ServerConf> const & serverInfo);
 
 		// Geters
 		Request const & getRequest() const;
 		ServerConf const &	getServerInfo() const;
 
 		// Public methods
-		virtual void doOnRead(WebServ & webserv);
-		virtual void doOnWrite(WebServ & webServ);
-		virtual void doOnError(WebServ & webServ, uint32_t event);
+		virtual void doOnRead();
+		virtual void doOnWrite();
+		virtual void doOnError(uint32_t event);
 
 		void	errorResponse(status_code_t status);
 		void	getResponse();
