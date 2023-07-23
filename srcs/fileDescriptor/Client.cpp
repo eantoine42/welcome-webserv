@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 12:33:58 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 18:42:57 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,19 +142,6 @@ void	Client::doOnRead()
 			return;
 		}
 		_serverInfoCurr = getCorrectServer();
-		//dans le server infocurr, gets the servername from the list if exists
-		std::vector<std::string> serversName = _serverInfoCurr.getName();
-		std::vector<std::string>::iterator its = serversName.begin();
-		for (;its !=serversName.end();its++)
-		{
-			if (_request.getHeaders().find("Host")->second == *its)
-			{
-				serversName.clear();
-				serversName.push_back(*its);
-				_serverInfoCurr.setName(serversName);
-				break;
-			}
-		}
 		_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 }
@@ -269,7 +256,6 @@ void Client::getResponse()
 
 ServerConf Client::getCorrectServer()
 {
-	//TODO checker si il n'y a pas de nom de server
 	std::vector<ServerConf>::iterator it = _serverInfo.begin();
 	for (; it != _serverInfo.end(); it++)
 	{
@@ -277,7 +263,7 @@ ServerConf Client::getCorrectServer()
 		std::vector<std::string>::iterator its = serversName.begin();
 		for (;its !=serversName.end();its++)
 		{
-			if (_request.getHeaders().find("Host")->second == *its)
+			if (_request.getHeaders().find("Host")->second == *its + ":" + StringUtils::intToString(it->getPort()))
 				return (*it);
 		}
 	}
