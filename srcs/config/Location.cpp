@@ -3,6 +3,7 @@
 #include "Exception.hpp"
 #include "StringUtils.hpp"
 #include "HttpUtils.hpp"
+#include "FileUtils.hpp"
 
 #include <cstdlib> // atoi
 
@@ -243,7 +244,11 @@ void Location::setUploadDir(std::vector<std::string> token)
 		throw(ConfFileParseError("Location bloc : problem with number of arguments for upload dir"));
 	_upload_dir += token[i].erase(token[i].size() - 1);
 	StringUtils::addCwd(_upload_dir);
+	if (!FileUtils::folderExistsAndWritable(_upload_dir.c_str()))
+		throw(ConfFileParseError("Location bloc : Upload dir not accessible"));
+
 }
+
 void Location::setCgi(std::vector<std::string> token)
 {
 	if (token.size() != 3)
