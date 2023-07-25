@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   FileUtils.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:02:34 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/21 11:07:20 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/24 00:00:15 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,4 +60,3 @@ bool    FileUtils::isDirectory(const char* path)
     }
     return S_ISDIR(statbuf.st_mode);
 }
-
