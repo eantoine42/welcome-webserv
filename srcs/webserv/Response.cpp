@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 11:45:05 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 15:19:59 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,19 +121,33 @@ void    Response::errorResponse(status_code_t code, Client & client)
     client.readyToRespond();
 }
 
-/* 	if (method == "GET")
+/* void Client::getResponse()
+{
+	// TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
+	// attention de bien prendre le root du bloc location (par defaut meme que serveur , mis a jour s'il existe dans le location bloc)
+	std::cout << _request;
+
+	std::vector<unsigned char> body;
+	std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
+	std::ifstream is(filename.c_str(), std::ifstream::binary);
+
+	if (is.good())
 	{
-		if (location)
-		{
-			if (std::strncmp(
-					(request + "/").c_str(),
-					location->getUri().c_str(),
-					location->getUri().size()) == 0)
-				fullPath = searchIndexFile(fullPath, location->getIndex(), location->getAutoindex());
-		}
-		else
-		{
-			if (request == "/")
-				fullPath = searchIndexFile(fullPath, _serverInfoCurr.getIndex(), _serverInfoCurr.getAutoindex());
-		}
-	} */
+		is.seekg(0, is.end);
+		int length = is.tellg();
+		is.seekg(0, is.beg);
+
+		char *buffer = new char[length];
+		is.read(buffer, length);
+		body = std::vector<unsigned char>(buffer, buffer + length);
+		is.close();
+		delete[] buffer;
+
+		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
+		Response::createResponse(resp);
+		_responseReady = true;
+	}
+	else
+	{
+	}
+} */

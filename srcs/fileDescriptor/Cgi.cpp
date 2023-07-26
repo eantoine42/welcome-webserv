@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Cgi.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 23:00:48 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/26 15:07:50 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,6 +106,16 @@ int Cgi::getWriteFd() const
 int Cgi::getPidChild() const
 {
     return _pidChild;
+}
+
+void    Cgi::setReadFd(int fd)
+{
+    this->_fdRead = fd;
+}
+
+void    Cgi::setWriteFd(int fd)
+{
+    this->_fdWrite = fd;
 }
 /******************************************************************************/
 

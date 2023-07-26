@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:39:09 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/24 17:18:09 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 15:05:35 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ class Cgi : public AFileDescriptor
         std::string                 _fullPath;
         int                         _fdRead;
         int                         _fdWrite;
-        int                         _pidChild; // Cam remove
+        int                         _pidChild; // Can remove
 
         int         initChildProcess(int toCgi[2], int fromCgi[2]);
         void        runChildProcess(int pipeToCgi[2], int pipeFromCgi[2]);        
@@ -47,6 +47,8 @@ class Cgi : public AFileDescriptor
         int     getReadFd() const;
         int     getWriteFd() const;
         int     getPidChild() const;
+        void    setReadFd(int fd);
+        void    setWriteFd(int fd);
 
        	virtual void doOnRead();
 		virtual void doOnWrite();

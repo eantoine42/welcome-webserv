@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 11:39:31 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 15:28:21 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,8 +74,6 @@ Client::~Client()
 		close(_cgi.getReadFd());
 	if (_cgi.getWriteFd() != -1)
 		close(_cgi.getWriteFd());		
-	if (_cgi.getPidChild() != -1)
-		kill(_cgi.getPidChild(), SIGTERM);;
 }
 /******************************************************************************/
 
@@ -236,44 +234,37 @@ void	Client::handleException(std::exception const & exception)
 		Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
 	}
 }
+
+
+bool Client::timeoutReached()
+{
+	bool result = (TimeUtils::getTimeOfDayMs() - _startTime) > TIMEOUT;
+	if (result)
+	{
+		if (_cgi.getReadFd() != -1)
+		{
+			_webServ->updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_DEL);
+			_webServ->removeFd(_cgi.getReadFd());
+			close(_cgi.getReadFd());
+			_cgi.setReadFd(-1);
+		}
+		if (_cgi.getWriteFd() != -1)
+		{
+			_webServ->updateEpoll(_cgi.getWriteFd(), 0, EPOLL_CTL_DEL);
+			_webServ->removeFd(_cgi.getWriteFd());
+			close(_cgi.getWriteFd());
+			_cgi.setWriteFd(-1);
+		}
+	}
+	return (result);
+}
 /******************************************************************************/
 
 /*****************
  * PRIVATE METHODS
  *****************/
 
-/* void Client::getResponse()
-{
-	// TODO: Verifier avec le serverConf le path du fichier et son existence OU errorResponse(NOT_FOUND) and change / to index.html
-	// attention de bien prendre le root du bloc location (par defaut meme que serveur , mis a jour s'il existe dans le location bloc)
-	std::cout << _request;
-
-	std::vector<unsigned char> body;
-	std::string filename = _serverInfoCurr.getRoot() + "/" + _request.getPathRequest();
-	std::ifstream is(filename.c_str(), std::ifstream::binary);
-
-	if (is.good())
-	{
-		is.seekg(0, is.end);
-		int length = is.tellg();
-		is.seekg(0, is.beg);
-
-		char *buffer = new char[length];
-		is.read(buffer, length);
-		body = std::vector<unsigned char>(buffer, buffer + length);
-		is.close();
-		delete[] buffer;
-
-		resp_t resp = {OK, body, _request.getExtension(), _rawData, true};
-		Response::createResponse(resp);
-		_responseReady = true;
-	}
-	else
-	{
-	}
-} */
-
-ServerConf Client::getCorrectServer()
+ServerConf const &		 Client::getCorrectServer()
 {
 	std::vector<ServerConf>::iterator it = _serverInfo.begin();
 	for (; it != _serverInfo.end(); it++)
@@ -302,7 +293,8 @@ ServerConf Client::getCorrectServer()
 	return (*(_serverInfo.begin()));
 }
 
-void Client::handleScript(std::string const &fullPath)
+
+void		Client::handleScript(std::string const &fullPath)
 {
 	_cgi = Cgi(*_webServ, *this, fullPath);
 
@@ -319,10 +311,7 @@ void Client::handleScript(std::string const &fullPath)
 }
 
 
-
-
-
-Location const *Client::getLocationBlock()
+Location const &	Client::getLocationBlock()
 {
 	std::vector<Location>::const_reverse_iterator it = _serverInfoCurr.getLocation().rbegin();
 
@@ -331,28 +320,26 @@ Location const *Client::getLocationBlock()
 		int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
 									it->getUri().c_str(), it->getUri().size());
 		if (result == 0)
-			return &(*it);
+			return (*it);
 	}
-	return (NULL);
+	throw RequestError(INTERNAL_SERVER_ERROR, "Could not find config for this request");
 }
 
 
-void Client::handleRequest(Location const *location)
+void		Client::handleRequest(Location const & conf)
 {
-	std::string path = _serverInfoCurr.getRoot();
+	std::string path = conf.getLocRoot();
 	std::string request = _request.getPathRequest();
 	std::string fullPath = path + request;
 	std::string method = _request.getHttpMethod();
 
-	if (location && location->getUri()[0] != '/')
-		path = "";
-
-	std::vector<std::string> methods;
-	if (location)
-		methods = location->getAllowMethod();
+	std::vector<std::string> methods = conf.getAllowMethod();
 
 	if (!methods.empty() && std::find(methods.begin(), methods.end(), method) == methods.end())
 		throw RequestError(METHOD_NOT_ALLOWED, "Method " + method + "is not allowed");
+
+	if (method == "GET" && std::strncmp((request + "/").c_str(), conf.getUri().c_str(), conf.getUri().size()) == 0)
+		fullPath = searchIndexFile(fullPath, conf.getIndex(), conf.getAutoindex());
 
 	size_t point = fullPath.rfind(".");
 	if (point != std::string::npos && fullPath.substr(point + 1) == "php")
@@ -384,28 +371,4 @@ std::string Client::searchIndexFile(std::string path, std::vector<std::string> c
 	if (!autoindex)
 		throw RequestError(FORBIDDEN, "Autoindex is off");
 	return path;
-}
-
-bool Client::timeoutReached()
-{
-	bool result = (TimeUtils::getTimeOfDayMs() - _startTime) > TIMEOUT;
-	if (result)
-	{
-		// TODO: Set to -1
-		if (_cgi.getReadFd() != -1)
-		{
-			_webServ->updateEpoll(_cgi.getReadFd(), 0, EPOLL_CTL_DEL);
-			_webServ->removeFd(_cgi.getReadFd());
-			close(_cgi.getReadFd());
-		}
-		if (_cgi.getWriteFd() != -1)
-		{
-			_webServ->updateEpoll(_cgi.getWriteFd(), 0, EPOLL_CTL_DEL);
-			_webServ->removeFd(_cgi.getWriteFd());
-			close(_cgi.getWriteFd());
-		}
-		if (_cgi.getPidChild() != -1)
-			kill(_cgi.getPidChild(), SIGTERM);
-	}
-	return (result);
 }

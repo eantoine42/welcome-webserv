@@ -35,11 +35,10 @@ class Client : public AFileDescriptor
 
 		Client(void);
 
-		ServerConf			getCorrectServer();
+		ServerConf const &	getCorrectServer();
 		void				handleScript(std::string const & fullPath);
-		Location const *	getLocationBlock();
-		void				handleRequest(Location const * location);
-
+		Location const &	getLocationBlock();
+		void				handleRequest(Location const & location);
 		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
 
 	public:
