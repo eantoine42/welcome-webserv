@@ -20,7 +20,7 @@
 #include "Cgi.hpp"
 
 #define BUFFER_SIZE		1024
-#define	TIMEOUT			5000LL
+#define	TIMEOUT			500000LL
 
 class Client : public AFileDescriptor
 {
@@ -38,7 +38,7 @@ class Client : public AFileDescriptor
 		ServerConf const &	getCorrectServer();
 		void				handleScript(std::string const & fullPath);
 		Location const &	getLocationBlock();
-		void				handleRequest(Location const & location);
+		void				handleRequest();
 		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
 
 	public:

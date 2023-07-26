@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 15:28:21 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 17:32:25 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,7 +179,7 @@ void Client::doOnWrite()
 
 	try
 	{
-		handleRequest(getLocationBlock());
+		handleRequest();
 	}
 	catch (std::exception &exception)
 	{
@@ -326,11 +326,13 @@ Location const &	Client::getLocationBlock()
 }
 
 
-void		Client::handleRequest(Location const & conf)
+void		Client::handleRequest()
 {
-	std::string path = conf.getLocRoot();
-	std::string request = _request.getPathRequest();
-	std::string fullPath = path + request;
+	Location const & conf = getLocationBlock();
+	std::string request = _request.getPathRequest().substr(conf.getUri().size() - 1);
+	if (request == "")
+		request = "/";
+	std::string fullPath = conf.getLocRoot() + request;
 	std::string method = _request.getHttpMethod();
 
 	std::vector<std::string> methods = conf.getAllowMethod();
@@ -338,12 +340,14 @@ void		Client::handleRequest(Location const & conf)
 	if (!methods.empty() && std::find(methods.begin(), methods.end(), method) == methods.end())
 		throw RequestError(METHOD_NOT_ALLOWED, "Method " + method + "is not allowed");
 
-	if (method == "GET" && std::strncmp((request + "/").c_str(), conf.getUri().c_str(), conf.getUri().size()) == 0)
+	if (method == "GET" && request == "/")
 		fullPath = searchIndexFile(fullPath, conf.getIndex(), conf.getAutoindex());
 
 	size_t point = fullPath.rfind(".");
 	if (point != std::string::npos && fullPath.substr(point + 1) == "php")
+	{
 		return handleScript(fullPath);
+	}
 	throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
 	/*if (method == "GET")
 		return Response::getResponse(autoindex);
@@ -359,7 +363,7 @@ std::string Client::searchIndexFile(std::string path, std::vector<std::string> c
 	std::vector<std::string>::const_iterator it = indexs.begin();
 	for (; it != indexs.end(); it++)
 	{
-		if (!FileUtils::fileExists((path + "/" + *it).c_str()))
+		if (!FileUtils::fileExists((path + *it).c_str()))
 			continue;
 		if (!FileUtils::fileRead((path + *it).c_str()))
 			throw RequestError(FORBIDDEN, "File cannot read");

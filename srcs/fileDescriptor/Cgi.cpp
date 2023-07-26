@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 15:07:50 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 17:33:14 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -192,7 +192,8 @@ void Cgi::doOnWrite()
 {
     std::vector<unsigned char> body = _clientInfo->getRequest().getMessageBody();
 
-    write(_fdWrite, &body[0], body.size());
+    if (write(_fdWrite, &body[0], body.size()) == -1)
+        std::cerr << "Error" << std::endl;
 
     _webServ->updateEpoll(_fdWrite, 0, EPOLL_CTL_DEL);
 	_webServ->removeFd(_fdWrite);
@@ -256,7 +257,7 @@ void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     cgiPathCopy = new char[cgiPath.size() + 1];
     strcpy(cgiPathCopy, cgiPath.c_str());
 
-    std::string script = _clientInfo->getRequest().getFileName();
+    std::string script = _fullPath.substr(_fullPath.rfind("/") + 1);
     scriptCopy = new char[script.size() + 1];
     strcpy(scriptCopy, script.c_str());
 
@@ -292,7 +293,6 @@ char **Cgi::mapCgiParams()
     ServerConf const &serverInfo = _clientInfo->getServerInfo();
     Request const &request = _clientInfo->getRequest();
     std::map<std::string, std::string> const &headers = request.getHeaders();
-    char *cwd = get_current_dir_name();
 
     std::string tab[19] = {
         std::string("AUTH_TYPE="),
@@ -308,14 +308,12 @@ char **Cgi::mapCgiParams()
         std::string("REQUEST_METHOD=") + request.getHttpMethod(),
         std::string("SCRIPT_NAME=") + "index.php",
         std::string("PHP_SELF=") + "index.php",
-        std::string("SCRIPT_FILENAME=") + cwd + "/" + _fullPath,
+        std::string("SCRIPT_FILENAME=") + _fullPath,
         std::string("SERVER_NAME=") + serverInfo.getName()[0], // TODO: Set dynamically
         std::string("SERVER_PORT=") + StringUtils::intToString(serverInfo.getPort()),
         std::string("SERVER_PROTOCOL=") + request.getHttpVersion(),
         std::string("SERVER_SOFTWARE=webserv"),
-        std::string("REQUEST_URI=") + request.getPathRequest()};
-
-    free(cwd);
+        std::string("REQUEST_URI=") + _fullPath};
 
     char **env = new char *[headers.size() + 19 + 1];
     char *var = NULL;
