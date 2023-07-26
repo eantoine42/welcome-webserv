@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 22:21:02 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 11:39:31 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -221,6 +221,21 @@ void Client::readyToRespond()
 	_responseReady = true;
 	_webServ->updateEpoll(_fd, EPOLLOUT, EPOLL_CTL_MOD);
 }
+
+
+void	Client::handleException(std::exception const & exception)
+{
+	DEBUG_COUT(exception.what());
+	try
+	{
+		RequestError error = dynamic_cast<RequestError const &>(exception);
+		Response::errorResponse(error.getStatusCode(), *this);
+	}
+	catch (std::exception &exception)
+	{
+		Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
+	}
+}
 /******************************************************************************/
 
 /*****************
@@ -304,19 +319,7 @@ void Client::handleScript(std::string const &fullPath)
 }
 
 
-void Client::handleException(std::exception &exception)
-{
-	DEBUG_COUT(exception.what());
-	try
-	{
-		RequestError error = dynamic_cast<RequestError &>(exception);
-		Response::errorResponse(error.getStatusCode(), *this);
-	}
-	catch (std::exception &exception)
-	{
-		Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
-	}
-}
+
 
 
 Location const *Client::getLocationBlock()

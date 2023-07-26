@@ -39,6 +39,7 @@ class Client : public AFileDescriptor
 		void				handleScript(std::string const & fullPath);
 		Location const *	getLocationBlock();
 		void				handleRequest(Location const * location);
+
 		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
 
 	public:
@@ -59,10 +60,11 @@ class Client : public AFileDescriptor
 		virtual void doOnWrite();
 		virtual void doOnError(uint32_t event);
 
-		void	responseCgi(std::string const & response);
+		void	responseCgi(std::vector<unsigned char> const & cgiRawData);
 		bool	timeoutReached();
 		void	fillRawData(std::vector<unsigned char> const & data);
 		void	readyToRespond();
+		void	handleException(std::exception const & exception);
 };
 
 #endif

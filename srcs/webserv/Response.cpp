@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 16:47:02 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 11:45:05 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "StringUtils.hpp"
 #include "TimeUtils.hpp"
 #include "Client.hpp"
+#include "Exception.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -22,7 +23,7 @@
 #include <cstring> // strncmp
 #include <cstdlib> // atoi
 
-void    Response::cgiResponse(std::vector<unsigned char> & rawData,
+void    Response::cgiResponse(std::vector<unsigned char> & clientRawData,
                               std::string headers, std::vector<unsigned char> & body)
 {
     int statusCode = 200;
@@ -52,7 +53,7 @@ void    Response::cgiResponse(std::vector<unsigned char> & rawData,
     std::vector<unsigned char> response;
     response.assign(common.begin(), common.end());
     response.insert(response.end(), body.begin(), body.end());
-    rawData.assign(response.begin(), response.end());
+    clientRawData.assign(response.begin(), response.end());
 }
 
 std::string     Response::commonResponse(status_code_t status)
