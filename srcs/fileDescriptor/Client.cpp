@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 11:43:53 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/28 13:20:00 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -298,8 +298,8 @@ ServerConf const *		 Client::getCorrectServerConf()
 		}
 	}
 
-	it = _server->getServerConfs().begin();
-	for (; it != _server->getServerConfs().end(); it++)
+	it = _serverInfo.begin();
+	for (; it != _serverInfo.end(); it++)
 	{
 		std::vector<Location>::const_reverse_iterator it2 = it->getLocation().rbegin();
 		for (; it2 != it->getLocation().rend(); it2++)
@@ -310,7 +310,7 @@ ServerConf const *		 Client::getCorrectServerConf()
 					return (&(*it)); 
 		}
 	}
-	return (&(*(_server->getServerConfs().begin())));
+	return (*(_serverInfo.begin()));
 }
 
 
