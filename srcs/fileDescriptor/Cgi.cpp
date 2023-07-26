@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Cgi.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/23 12:47:11 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/23 23:00:48 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -158,6 +158,7 @@ void Cgi::doOnRead()
     {
         std::string str(_rawData.begin(), _rawData.end());
         start = str.find("\r\n\r\n") + 4;
+		//TODO exception avec str vide  commande curl 127.0.0.1:4242
         str = str.substr(start);
         str = Response::cgiSimpleResponse(str);
         _clientInfo->responseCgi(str);
