@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 09:44:04 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/25 16:47:02 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 #include "StringUtils.hpp"
 #include "TimeUtils.hpp"
 #include "Client.hpp"
-#include "Exception.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -69,17 +68,15 @@ std::string     Response::commonResponse(status_code_t status)
     return (common);
 }
 
-std::string     Response::bodyHeaders(std::vector<unsigned char> body, std::string extension)
+std::string     Response::bodyHeaders(std::string extension, unsigned int size)
 {
     std::string headers = "";
-    if (body.empty())
-        return headers;
     headers += "Content-Type: " + HttpUtils::getMimeType(extension) + "\r\n";
-    headers += "Content-Length: " + StringUtils::intToString(body.size()) + "\r\n";
+    headers += "Content-Length: " + StringUtils::intToString(size) + "\r\n";
     return headers;
 }
 
-void    Response::createResponse(resp_t resp)
+/* void    Response::createResponse(resp_t resp)
 {
     std::string response = commonResponse(resp.status);
     response += bodyHeaders(resp.body, resp.extension);
@@ -97,9 +94,9 @@ void    Response::createResponse(resp_t resp)
         resp.rawData.assign(response.begin(), response.end());
         resp.rawData.insert(resp.rawData.end(), resp.body.begin(), resp.body.end());
     }
-}
+} */
 
-std::string     Response::errorResponse(status_code_t code) 
+void    Response::errorResponse(status_code_t code, Client & client) 
 {
     std::pair<status_code_t, std::string> statusCode = 
                                 HttpUtils::getResponseStatus(code);
@@ -110,7 +107,17 @@ std::string     Response::errorResponse(status_code_t code)
     error += StringUtils::intToString(code);
     error += " " + statusCode.second;
     error += "</h1></center>\n<hr><center>webserv (Ubuntu)</center>\n</body>\n</html>\n";
-    return error;
+
+    std::string response = commonResponse(code);
+    response += "Connection: close\r\n";
+    response += bodyHeaders("html", error.size());
+    response += "\r\n" + error;
+
+    std::vector<unsigned char> data;
+    data.assign(response.begin(), response.end());
+
+    client.fillRawData(data);
+    client.readyToRespond();
 }
 
 /* 	if (method == "GET")
