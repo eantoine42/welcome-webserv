@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:24:01 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 12:13:27 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/26 21:29:06 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,7 @@ ServerConf::ServerConf(void)
 	_index.push_back("index");
 	_index.push_back("index.html");
 	_server_name.push_back("");
+	_cgi["php"] = "/usr/bin/php-cgi";
 }
 
 ServerConf::ServerConf(ServerConf const &src)
@@ -128,6 +129,8 @@ void ServerConf::setCgi(std::vector<std::string> token)
 {
 	if (token.size() != 3)
 		throw(ConfFileParseError("cgi argument problem"));
+	else if (token[1].compare("php"))
+		throw(ConfFileParseError("Our server deals only with php"));
 	_cgi.insert(std::pair<std::string, std::string>(token[1], token[2].erase(token[2].size() - 1)));
 }
 

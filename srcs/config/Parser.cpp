@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Parser.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/31 19:39:21 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/21 23:27:06 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 23:00:35 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -229,11 +229,13 @@ char	Parser::checkChar(std::string str)
 void	Parser::formatConfFile(std::string &conf)
 {
 	int i = 0;
+	int count = 0;
 	int j = conf.size();
 	while (i < j){
 		if (conf[i] == ';'){
 			conf.replace(i, 1, ";\n");
 			j++;
+			count++;
 		}
 		i++;
 	}
@@ -269,6 +271,8 @@ void	Parser::formatConfFile(std::string &conf)
 		else
 			i++;
 	}
+	if (count != StringUtils::nbDeclarations(conf))
+		throw(ConfFileParseError("problem with semi-columns") );
 }
 
 /**

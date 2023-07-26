@@ -253,6 +253,8 @@ void Location::setCgi(std::vector<std::string> token)
 {
 	if (token.size() != 3)
 		throw(ConfFileParseError("Location bloc : cgi argument problem"));
+	else if (token[1].compare("php"))
+		throw(ConfFileParseError("Our server deals only with php"));
 	_cgi.clear();
 	_cgi.insert(std::pair<std::string, std::string>(token[1], token[2].erase(token[2].size() - 1)));
 }
