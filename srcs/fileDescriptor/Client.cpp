@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 17:32:25 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 17:56:30 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -294,7 +294,7 @@ ServerConf const &		 Client::getCorrectServer()
 }
 
 
-void		Client::handleScript(std::string const &fullPath)
+void		Client::handleScript(std::string const & fullPath)
 {
 	_cgi = Cgi(*_webServ, *this, fullPath);
 
@@ -329,11 +329,12 @@ Location const &	Client::getLocationBlock()
 void		Client::handleRequest()
 {
 	Location const & conf = getLocationBlock();
+
 	std::string request = _request.getPathRequest().substr(conf.getUri().size() - 1);
 	if (request == "")
 		request = "/";
 	std::string fullPath = conf.getLocRoot() + request;
-	std::string method = _request.getHttpMethod();
+	std::string const & method = _request.getHttpMethod();
 
 	std::vector<std::string> methods = conf.getAllowMethod();
 
@@ -345,9 +346,7 @@ void		Client::handleRequest()
 
 	size_t point = fullPath.rfind(".");
 	if (point != std::string::npos && fullPath.substr(point + 1) == "php")
-	{
 		return handleScript(fullPath);
-	}
 	throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
 	/*if (method == "GET")
 		return Response::getResponse(autoindex);

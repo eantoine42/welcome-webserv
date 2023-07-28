@@ -20,7 +20,7 @@
 #include "Cgi.hpp"
 
 #define BUFFER_SIZE		1024
-#define	TIMEOUT			500000LL
+#define	TIMEOUT			5000LL
 
 class Client : public AFileDescriptor
 {
