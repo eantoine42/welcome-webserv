@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 13:20:00 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/28 12:20:26 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -297,20 +297,7 @@ ServerConf const *		 Client::getCorrectServerConf()
 				return (&(*it));
 		}
 	}
-
-	it = _serverInfo.begin();
-	for (; it != _serverInfo.end(); it++)
-	{
-		std::vector<Location>::const_reverse_iterator it2 = it->getLocation().rbegin();
-		for (; it2 != it->getLocation().rend(); it2++)
-		{
-			int result = std::strncmp((_request.getPathRequest() + "/").c_str(), 
-				it2->getUri().c_str(), it2->getUri().size());
-				if (result == 0)
-					return (&(*it)); 
-		}
-	}
-	return (*(_serverInfo.begin()));
+	return (&(*(_server->getServerConfs().begin())));
 }
 
 
