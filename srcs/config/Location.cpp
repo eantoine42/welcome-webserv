@@ -102,7 +102,7 @@ int const &Location::getPort() const { return (_port); }
 std::string const &Location::getUri() const { return _uri; }
 bool const &Location::getAutoindex() const { return _autoindex; }
 std::vector<std::string> const &Location::getIndex() const { return _index; }
-std::string const &Location::getReturn() const { return _return; }
+std::map<int, std::string> const &Location::getReturn() const { return _return; }
 std::vector<std::string> const &Location::getAllowMethod() const { return _allow_method; }
 std::string const &Location::getLocRoot() const { return _locRoot; }
 std::string const &Location::getUploadDir() const { return _upload_dir; }
@@ -253,6 +253,8 @@ void Location::setCgi(std::vector<std::string> token)
 {
 	if (token.size() != 3)
 		throw(ConfFileParseError("Location bloc : cgi argument problem"));
+	else if (token[1].compare("php"))
+		throw(ConfFileParseError("Our server deals only with php"));
 	_cgi.clear();
 	_cgi.insert(std::pair<std::string, std::string>(token[1], token[2].erase(token[2].size() - 1)));
 }
@@ -286,16 +288,22 @@ void Location::setClientBodySize(std::vector<std::string> token)
 
 void Location::setReturn(std::vector<std::string> token)
 {
-	if (token.size() == 2)
-		_return = token[1].erase(token[1].size() - 1);
+	int val;
+	if (_return.size() == 0 && token.size() == 2 && ((val = atoi(token[1].erase(token[1].size() - 1).c_str())) >= 200) && val < 700)
+	{
+		_return[val] = "";
+		return;
+	}
 	if (token.size() != 3)
 		throw(ConfFileParseError("Location bloc : problem with number of arguments for return"));
+	val = atoi(token[1].erase(token[1].size()).c_str());
 	for (size_t i = 0; i < token[1].size(); i++)
 		if (token[1][i] < 48 && token[1][i] > 57)
-			throw(ConfFileParseError("Location bloc : _redirect : fisrt argument must be numeric"));
-	if (atoi(token[1].c_str()) < 300 && atoi(token[1].c_str()) > 599)
-		throw(ConfFileParseError("Location bloc : _redirect : fisrt argument must be between 300 and 599"));
-	_return = token[1] + " " + token[2].erase(token[2].size() - 1);
+			throw(ConfFileParseError("Location bloc : return : fisrt argument must be numeric"));
+	if ((val < 301 && val > 307) || (val > 303 && val < 307))
+		throw(ConfFileParseError("Location bloc : return redirection: first argument must be between 301 and 307"));
+	if (_return.size() == 0 || ((_return.size() == 1) && !_return.begin()->second.compare("")))
+		_return[val] = token[2].erase(token[2].size() - 1);
 }
 
 /**
@@ -332,7 +340,11 @@ std::ostream &operator<<(std::ostream &o, Location const &i)
 	if (i.getLocRoot().empty() == false)
 		o << "    root			=	[" << i.getLocRoot() << "]" << std::endl;
 	if (i.getReturn().empty() == false)
-		o << "    redirect			=	[" << i.getReturn() << "]" << std::endl;
+	{
+		std::map<int, std::string>::const_iterator itr;
+		for (itr = i.getReturn().begin(); itr != i.getReturn().end(); itr++)
+			o << "    return			=	[" << itr->first << " ; " << itr->second << "]" << std::endl;
+	}
 	if (i.getAllowMethod().empty() == false)
 		o << "    methods			=	[" << i.getAllowMethod() << "]" << std::endl;
 	if (i.getUploadDir().empty() == false)

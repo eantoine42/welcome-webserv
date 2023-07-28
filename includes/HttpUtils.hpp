@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpUtils.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:35:05 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 09:31:53 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/27 13:06:49 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ enum status_code_t {
 	SEE_OTHER,
 	NOT_MODIFIED,
 	USE_PROXY,
-	TEMPORARY_REDIRECT = 307,
+	TEMPORARY_RETURN = 307,
 	BAD_REQUEST = 400,
 	UNAUTHORIZED,
 	PAYMENT_REQUIRED,

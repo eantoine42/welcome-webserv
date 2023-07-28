@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/29 21:37:33 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 17:46:22 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/27 13:09:43 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,7 +102,7 @@ std::map<status_code_t, std::string>	HttpUtils::initResponseStatus()
 	map.insert(std::pair<status_code_t, std::string>(SEE_OTHER,"See Other"));
 	map.insert(std::pair<status_code_t, std::string>(NOT_MODIFIED,"Not Modified"));
 	map.insert(std::pair<status_code_t, std::string>(USE_PROXY,"Use Proxy"));
-	map.insert(std::pair<status_code_t, std::string>(TEMPORARY_REDIRECT,"Temporary Redirect"));
+	map.insert(std::pair<status_code_t, std::string>(TEMPORARY_RETURN,"Temporary Return"));
 	map.insert(std::pair<status_code_t, std::string>(BAD_REQUEST,"Bad Request"));
 	map.insert(std::pair<status_code_t, std::string>(UNAUTHORIZED,"Unauthorized"));
 	map.insert(std::pair<status_code_t, std::string>(PAYMENT_REQUIRED,"Payment Required"));

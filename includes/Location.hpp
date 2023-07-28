@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/23 18:18:12 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/25 12:37:14 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/27 13:50:35 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,7 @@ class Location
 		std::map<std::string, std::string>	_cgi;
 		bool								_autoindex;
 		std::string							_upload_dir;
-		std::string							_return;
+		std::map<int, std::string>			_return;
 		long int							_client_body_size;
 		std::string							_error_pages;
 		std::string							_uri;
@@ -88,7 +88,7 @@ class Location
 		std::string							const &getUri() const;
 		bool								const &getAutoindex() const;
 		std::vector<std::string>			const &getIndex() const;
-		std::string							const &getReturn() const;
+		std::map<int, std::string>			const &getReturn() const;
 		std::vector<std::string>			const &getAllowMethod() const;
 		std::string							const &getLocRoot() const;
 		std::string							const &getUploadDir() const;

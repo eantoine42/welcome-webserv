@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   StringUtils.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:08:56 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 16:23:32 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/26 23:12:39 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,27 @@
 #include <sstream> // stringstream
 #include <algorithm> // replace if
 #include <stack>
+#include "Exception.hpp"
+
+/************************
+ * INIT STATIC VARIABLES
+ ***********************/
+
+const StringUtils::instruction_tab_entry_t	StringUtils::INSTRUCTIONS[] = 
+{
+	{SUROOT, "root"},
+	{SUMETHODS, "methods"},
+	{SUINDEX, "index"},
+	{SUCGI, "cgi"},
+	{SUAUTOINDEX, "autoindex"},
+	{SUUPLOAD_DIR, "upload_dir"},
+	{SURETURN,"return"},
+	{SUCLIENT_MAX_BODY_SIZE, "client_max_body_size"},
+	{SUURI, "uri"},
+	{SULISTEN, "listen"},
+	{SUSERVER_NAME, "server_name"},
+	{SUERROR_PAGE, "error_page"},
+};
 
 /*****************
 * CANNONICAL FORM
@@ -296,4 +317,25 @@ void	StringUtils::addCwd(std::string &path)
 			std::cerr << "Error getting current directory." << std::endl;
 		}
 	}
+}
+
+int		StringUtils::nbDeclarations(std::string const &str)
+{
+	int nbDirect = 0;
+	std::vector<std::string> directives = StringUtils::splitString(str," \n");
+	std::vector<std::string>::iterator it = directives.begin();
+	for(;it != directives.end(); it++)
+	{
+		if (!(*it).compare("server") && (*(it + 1)).compare("{"))
+			throw(ConfFileParseError("Server : Must be followed by {"));
+
+		int i = 0;
+		while (i < SUTOTAL_INSTRUCTIONS)
+		{
+			if (!(*it).compare(INSTRUCTIONS[i].name))
+				nbDirect++;
+			i++;
+		}
+	}
+	return (nbDirect);
 }

@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:27:42 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/24 00:40:09 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/26 22:49:28 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,21 @@
 #include <unistd.h>
 
 #define WHITESPACES " \n\r\t\f\v"
+enum instruction_t {
+	SUROOT,
+	SUMETHODS,
+	SUINDEX,
+	SUCGI,
+	SUAUTOINDEX,
+	SUUPLOAD_DIR,
+	SURETURN,
+	SUCLIENT_MAX_BODY_SIZE,
+	SUERROR_PAGE,
+	SUURI,
+	SULISTEN,
+	SUSERVER_NAME,
+	SUTOTAL_INSTRUCTIONS
+};
 
 class StringUtils
 {
@@ -44,7 +59,15 @@ class StringUtils
 		static int						findClosingBracket(std::string str);
 		static std::vector<std::string> splitString(std::string str, const std::string &charset = " ");
 		static std::string				intToString(int num);
-		static void						addCwd(std::string &path);	
+		static void						addCwd(std::string &path);
+		static int						nbDeclarations(std::string const &str);
+
+		struct instruction_tab_entry_t 
+		{
+			instruction_t	instruction_index;
+			std::string 	name;
+		};
+		static const instruction_tab_entry_t 	INSTRUCTIONS[];
 };
 
 template < class T >
