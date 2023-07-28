@@ -27,18 +27,20 @@ class Client : public AFileDescriptor
 	private:
 		long long						_startTime;
 		std::vector<unsigned char>		_rawData;
-		std::vector<ServerConf> 		_serverInfo;
-		ServerConf 						_serverInfoCurr; 
+		Server const * const			_server;
+		ServerConf const * 				_serverConf; 
+		Location const *				_location;
 		Request							_request;
+		std::string						_correctPathRequest;
 		bool							_responseReady;
 		Cgi 							_cgi;
 
 		Client(void);
 
-		ServerConf const &	getCorrectServer();
+		ServerConf const *	getCorrectServerConf();
 		void				handleScript(std::string const & fullPath);
-		Location const &	getLocationBlock();
-		void				handleRequest();
+		void				getCorrectLocationBlock();
+		void				getCorrectPathRequest();
 		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
 
 	public:
@@ -48,11 +50,11 @@ class Client : public AFileDescriptor
 		virtual ~Client();
 
 		// Constructors
-		Client(int fd, WebServ & webServ, std::vector<ServerConf> const & serverInfo);
+		Client(int fd, WebServ & webServ, Server const * server);
 
 		// Geters
-		Request const & getRequest() const;
-		ServerConf const &	getServerInfo() const;
+		Request const &		getRequest() const;
+		ServerConf const *	getServerConf() const;
 
 		// Public methods
 		virtual void doOnRead();
