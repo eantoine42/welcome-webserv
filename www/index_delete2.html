@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exemple de méthode DELETE pour supprimer un fichier</title>
+</head>
+<body>
+    <h1>Exemple de méthode DELETE pour supprimer un fichier</h1>
+    <p>Entrez le nom du fichier à supprimer :</p>
+    <form id="deleteForm">
+        <input type="text" name="filename" placeholder="Nom du fichier à supprimer" required>
+        <button type="button" onclick="deleteFile()">Supprimer</button>
+    </form>
+    <p id="resultMessage"></p>
+
+    <script>
+        function deleteFile() {
+            const filename = document.querySelector('input[name="filename"]').value;
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4) {
+                    if (this.status == 200) {
+                        document.getElementById("resultMessage").innerText = "Fichier supprimé avec succès.";
+                    } else if (this.status == 404) {
+                        document.getElementById("resultMessage").innerText = "Fichier non trouvé.";
+                    } else {
+                        document.getElementById("resultMessage").innerText = "Erreur lors de la suppression du fichier.";
+                    }
+                }
+            };
+            xhttp.open("DELETE", "delete_file.php?filename=" + encodeURIComponent(filename), true);
+            xhttp.send();
+        }
+    </script>
+</body>
+</html>
+

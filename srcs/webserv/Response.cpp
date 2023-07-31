@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Response.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 15:19:59 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/07/31 22:19:38 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "TimeUtils.hpp"
 #include "Client.hpp"
 #include "Exception.hpp"
+#include "FileUtils.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -22,6 +23,21 @@
 #include <algorithm> // search
 #include <cstring> // strncmp
 #include <cstdlib> // atoi
+
+void	ft_bzero(void *s, size_t n)
+{
+	size_t	i;
+	char	*str;
+
+	if (n == 0)
+		return ;
+	i = 0;
+	str = (char *)s;
+	while (i < n)
+		str[i++] = 0;
+	return ;
+}
+
 
 void    Response::cgiResponse(std::vector<unsigned char> & clientRawData,
                               std::string headers, std::vector<unsigned char> & body)
@@ -151,3 +167,26 @@ void    Response::errorResponse(status_code_t code, Client & client)
 	{
 	}
 } */
+
+int Response::deleteResponse(std::string path)
+{
+	struct stat         stat;
+	status_code_t		statCode;
+    ft_bzero(&stat, sizeof(struct stat));
+    if (!lstat(path.c_str(), &stat)) {
+        if (S_ISREG(stat.st_mode) || S_ISDIR(stat.st_mode))
+           statCode=NO_CONTENT;
+    }
+    else
+        statCode=NOT_FOUND;
+    if (S_ISDIR(stat.st_mode) == true &&
+       *(--path.end()) != '/'){
+        statCode=CONFLICT;}
+	if (!lstat(path.c_str(), &stat)) {
+        if (S_ISREG(stat.st_mode) || S_ISLNK(stat.st_mode))
+            unlink(path.c_str());
+        else if (S_ISDIR(stat.st_mode))
+            FileUtils::_removeDir(path.c_str());
+    }
+	return statCode;
+}

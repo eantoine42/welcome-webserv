@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/28 16:08:56 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 23:12:39 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/07/31 23:25:56 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,6 +88,7 @@ std::string		StringUtils::trimComments(const std::string &str) {
 std::string		StringUtils::replaceConsecutiveSpaces(const std::string& str) 
 {
     std::stringstream ss;
+	std::string ans;
     bool previousCharIsSpace = false;
     for (std::string::const_iterator it = str.begin(); it!=str.end(); ++it) 
 	{
@@ -96,7 +97,10 @@ std::string		StringUtils::replaceConsecutiveSpaces(const std::string& str)
             ss << c;
         previousCharIsSpace = isspace(c);
     }
-    return ss.str();
+	ans = ss.str();
+	if (ans.find(" ;")!=std::string::npos)
+		ans.replace(ans.find(" ;"),2,";");
+    return ans;
 }
 
 /**
