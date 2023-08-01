@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 22:44:58 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/01 12:16:29 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -194,9 +194,9 @@ void Client::doOnWrite()
 		if (point != std::string::npos && _correctPathRequest.substr(point + 1) == "php")
 			return handleScript(_correctPathRequest);
 		if (this->getRequest().getHttpMethod() == "DELETE"){
-			 Response::deleteResponse(_correctPathRequest);
+			 Response::dealDelete(_correctPathRequest, *this);
 			 return;}
-		throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
+		//throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
 
 		/*if (method == "GET")
 			return Response::getResponse(autoindex);

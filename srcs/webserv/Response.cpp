@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/31 22:19:38 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/01 01:06:58 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -168,7 +168,21 @@ void    Response::errorResponse(status_code_t code, Client & client)
 	}
 } */
 
-int Response::deleteResponse(std::string path)
+void Response::dealDelete(const std::string &path, Client & client)
+{
+	status_code_t		statCode; 
+	std::string response;
+	statCode = Response::deleteResponse(path);
+	response = commonResponse(statCode);
+	std::vector<unsigned char> data;
+    data.assign(response.begin(), response.end());
+
+    client.fillRawData(data);
+    client.readyToRespond();
+	return ;
+}
+
+status_code_t Response::deleteResponse(const std::string &path)
 {
 	struct stat         stat;
 	status_code_t		statCode;
@@ -186,7 +200,8 @@ int Response::deleteResponse(std::string path)
         if (S_ISREG(stat.st_mode) || S_ISLNK(stat.st_mode))
             unlink(path.c_str());
         else if (S_ISDIR(stat.st_mode))
-            FileUtils::_removeDir(path.c_str());
+            if (FileUtils::_removeDir(path.c_str()) == -1)
+				statCode = FORBIDDEN;
     }
 	return statCode;
 }
