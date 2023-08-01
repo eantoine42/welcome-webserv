@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/01 01:06:58 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/01 15:20:13 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,20 +23,6 @@
 #include <algorithm> // search
 #include <cstring> // strncmp
 #include <cstdlib> // atoi
-
-void	ft_bzero(void *s, size_t n)
-{
-	size_t	i;
-	char	*str;
-
-	if (n == 0)
-		return ;
-	i = 0;
-	str = (char *)s;
-	while (i < n)
-		str[i++] = 0;
-	return ;
-}
 
 
 void    Response::cgiResponse(Client & client, std::string headers,
@@ -172,40 +158,32 @@ void    Response::errorResponse(status_code_t code, Client & client)
 	}
 } */
 
-void Response::dealDelete(const std::string &path, Client & client)
-{
-	status_code_t		statCode; 
-	std::string response;
-	statCode = Response::deleteResponse(path);
-	response = commonResponse(statCode);
-	std::vector<unsigned char> data;
-    data.assign(response.begin(), response.end());
-
-    client.fillRawData(data);
-    client.readyToRespond();
-	return ;
-}
-
-status_code_t Response::deleteResponse(const std::string &path)
+void Response::deleteResponse(const std::string &path, Client & client)
 {
 	struct stat         stat;
-	status_code_t		statCode;
-    ft_bzero(&stat, sizeof(struct stat));
-    if (!lstat(path.c_str(), &stat)) {
-        if (S_ISREG(stat.st_mode) || S_ISDIR(stat.st_mode))
-           statCode=NO_CONTENT;
+	std::string 		response;
+	
+    bzero(&stat, sizeof(struct stat));
+    if (lstat(path.c_str(), &stat) == -1)
+		throw RequestError(NOT_FOUND, "Impossible to delete path");
+
+    if (S_ISDIR(stat.st_mode) == true && *(--path.end()) != '/') 
+        throw RequestError(CONFLICT, "Conflict deleting path");
+		
+    if (S_ISREG(stat.st_mode) || S_ISLNK(stat.st_mode))
+        unlink(path.c_str());//TODO eric si pas les droits
+    else if (S_ISDIR(stat.st_mode)){
+        if (FileUtils::_removeDir(path.c_str()) == -1)
+			throw RequestError(FORBIDDEN, "No access authorisation to path");
     }
-    else
-        statCode=NOT_FOUND;
-    if (S_ISDIR(stat.st_mode) == true &&
-       *(--path.end()) != '/'){
-        statCode=CONFLICT;}
-	if (!lstat(path.c_str(), &stat)) {
-        if (S_ISREG(stat.st_mode) || S_ISLNK(stat.st_mode))
-            unlink(path.c_str());
-        else if (S_ISDIR(stat.st_mode))
-            if (FileUtils::_removeDir(path.c_str()) == -1)
-				statCode = FORBIDDEN;
-    }
-	return statCode;
+	else
+		throw RequestError(NOT_IMPLEMENTED, "Unable to delete path");
+
+	response = commonResponse(NO_CONTENT);
+	response += "\r\n";
+	std::vector<unsigned char> data;
+    data.assign(response.begin(), response.end());
+    client.fillRawData(data);
+    client.readyToRespond();
 }
+

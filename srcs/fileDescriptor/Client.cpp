@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/01 12:16:29 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/01 15:22:38 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -180,9 +180,8 @@ void Client::doOnWrite()
 	try {
 		if (_callCgi)
 			return handleScript(_correctPathRequest);
-		if (this->getRequest().getHttpMethod() == "DELETE"){
-			 Response::dealDelete(_correctPathRequest, *this);
-			 return;}
+		if (this->getRequest().getHttpMethod() == "DELETE")
+			 return Response::deleteResponse(_correctPathRequest, *this);
 		throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST");
 
 		/*if (method == "GET")
@@ -220,14 +219,15 @@ void Client::readyToRespond()
 
 void Client::handleException(std::exception const &exception)
 {
-	DEBUG_COUT(exception.what());
 	try
 	{
 		RequestError error = dynamic_cast<RequestError const &>(exception);
+		DEBUG_COUT(error.getCause());
 		Response::errorResponse(error.getStatusCode(), *this);
 	}
 	catch (std::exception &exception)
 	{
+		DEBUG_COUT(exception.what());
 		Response::errorResponse(INTERNAL_SERVER_ERROR, *this);
 	}
 }
