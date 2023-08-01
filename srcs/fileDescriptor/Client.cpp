@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/18 16:02:19 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/01 12:51:34 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/01 12:16:29 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -180,14 +180,18 @@ void Client::doOnWrite()
 	try {
 		if (_callCgi)
 			return handleScript(_correctPathRequest);
-		throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST DELETE");
+		if (this->getRequest().getHttpMethod() == "DELETE"){
+			 Response::dealDelete(_correctPathRequest, *this);
+			 return;}
+		throw RequestError(METHOD_NOT_ALLOWED, "Should implement GET POST");
+
 		/*if (method == "GET")
 			return Response::getResponse(autoindex);
 		if (method == "POST")
-			return Response::postResponse(uploadDir);
-		if (method == "DELETE")
-			return Response::deleteResponse();*/
-	} catch (std::exception &exception) {
+			return Response::postResponse(uploadDir);*/
+	}
+	catch (std::exception &exception)
+	{
 		handleException(exception);
 	}
 }
