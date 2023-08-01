@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/01 19:39:13 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/26 17:18:34 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/01 14:15:46 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,10 +38,8 @@ WebServ::WebServ(WebServ const & copy)
 		_clients(copy._clients)
 {}
 
-WebServ &   WebServ::operator=(WebServ const & rhs)
-{
-    if (this != &rhs)
-    {
+WebServ &   WebServ::operator=(WebServ const & rhs) {
+    if (this != &rhs) {
         _epollFd = rhs._epollFd;
         _mapFd = rhs._mapFd;
 		_clients = rhs._clients;
@@ -49,19 +47,16 @@ WebServ &   WebServ::operator=(WebServ const & rhs)
     return (*this);
 }
 
-WebServ::~WebServ()
-{
+WebServ::~WebServ() {
 	std::map<int, AFileDescriptor *>::iterator it = this->_mapFd.begin();
-	for (; it != this->_mapFd.end(); it++)
-	{
-		if (dynamic_cast<Client *>(it->second) || dynamic_cast<Server *>(it->second))
-		{
+
+	for (; it != this->_mapFd.end(); it++) {
+		if (dynamic_cast<Client *>(it->second) || dynamic_cast<Server *>(it->second)) {
 			delete it->second;
 			close(it->first);
 		}
 	}
 	close(_epollFd);
-
 }
 /******************************************************************************/
 
@@ -74,8 +69,7 @@ WebServ::~WebServ()
  * @param fd File descriptor number
  * @param fileDescriptor File descriptor object
  */
-void    WebServ::addFd(int fd, AFileDescriptor * fileDescriptor)
-{
+void    WebServ::addFd(int fd, AFileDescriptor * fileDescriptor) {
     _mapFd[fd] = fileDescriptor;
 }
 
@@ -84,19 +78,15 @@ void    WebServ::addFd(int fd, AFileDescriptor * fileDescriptor)
  * @brief 
  * @param fd 
  */
-void	WebServ::removeFd(int fd)
-{
+void	WebServ::removeFd(int fd) {
 	_mapFd.erase(fd);
 }
 
 
-void	WebServ::removeClient(int fd)
-{
+void	WebServ::removeClient(int fd) {
 	std::vector<Client *>::iterator it = _clients.begin();
-	for (; it != _clients.end(); it++)
-	{
-		if ((*it)->getFd() == fd)
-		{
+	for (; it != _clients.end(); it++) {
+		if ((*it)->getFd() == fd) {
 			_clients.erase(it);
 			break;
 		}
@@ -108,8 +98,7 @@ void	WebServ::removeClient(int fd)
  * @brief Keep a track of client start time
  * @param clientInfo A pair which bind a fd with a start time
  */
-void	WebServ::addClient(Client * client)
-{
+void	WebServ::addClient(Client * client) {
 	_clients.push_back(client);
 }
 
@@ -140,35 +129,34 @@ void    WebServ::epollInit()
 /**
  * @brief Start webServ and handle events with epoll
  */
-void    WebServ::start()
-{
+void    WebServ::start() {
     int nfds;
     struct epoll_event events[MAX_EVENTS];
 
-	while (g_run)
-	{
+	while (g_run) {
         // How handle if nfds < 0
 		nfds = epoll_wait(this->_epollFd, events, MAX_EVENTS, 1);
 
-		for (int i = 0; i < nfds; i++)
-		{
+		for (int i = 0; i < nfds; i++) {
 			int					fd = events[i].data.fd;
 			uint32_t			event = events[i].events;
 			AFileDescriptor *	aFd = _mapFd[fd];
-			
-			if (event & EPOLLIN)
-				aFd->doOnRead();
-			if (event & EPOLLOUT)
-				aFd->doOnWrite();
-			if (!(event & EPOLLIN) && !(event & EPOLLOUT))
-				aFd->doOnError(event);
+
+			switch (event) {
+				case EPOLLIN:
+					aFd->doOnRead();
+					break;
+				case EPOLLOUT:
+					aFd->doOnWrite();
+					break;
+				default:
+					aFd->doOnError(event);
+			}
 		}
 		
-		if (!_clients.empty())
-		{
-			Client * client = _clients[0];
-			if (client->timeoutReached())
-			{
+		if (!_clients.empty()) {
+			Client * client = *_clients.begin();
+			if (client->timeoutReached()) {
 				Response::errorResponse(REQUEST_TIMEOUT, *client);
 				_clients.erase(_clients.begin());
 			}
@@ -184,8 +172,7 @@ void    WebServ::start()
  * @param mod see man epoll (Ex: EPOLL_CTL_ADD, EPOLL_CTL_MOD ...)
  * @throw EpollInitError
  */
-void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
-{
+void	WebServ::updateEpoll(int fd, u_int32_t event, int mod) {
 	struct epoll_event ev;
 
 	bzero(&ev, sizeof(ev));
@@ -201,23 +188,15 @@ void	WebServ::updateEpoll(int fd, u_int32_t event, int mod)
  * in mapFd and remove fd is present in clientTimes
  * @param fd Fd number
  */
-void	WebServ::clearFd(int fd)
-{
-	std::vector<Client *>::iterator it = _clients.begin();
-	for (; it != _clients.end(); it++)
-	{
-		if ((*it)->getFd() == fd)
-		{
-			_clients.erase(it);
-			break;
-		}
-	}
+void	WebServ::clearFd(int fd) {
+	removeClient(fd);
 
     updateEpoll(fd, 0, EPOLL_CTL_DEL);
 	close(fd);
 
-	if (_mapFd.find(fd) == _mapFd.end())
+	if (_mapFd.find(fd) == _mapFd.end()) {
 		return ;
+	}
 	if (_mapFd[fd])
 		delete _mapFd[fd];
 	_mapFd.erase(fd);

@@ -6,7 +6,7 @@
 /*   By: lfrederi <lfrederi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 23:51:46 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/07/28 12:21:42 by lfrederi         ###   ########.fr       */
+/*   Updated: 2023/08/01 10:03:10 by lfrederi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -166,21 +166,26 @@ void Cgi::doOnRead()
 
     if (n == 0)
     {
-        try
-        {
-            processCgiResponse();
-        }
-        catch (const std::exception &e)
-        {
-           _clientInfo->handleException(e); 
-        }
-
         _webServ->updateEpoll(_fdRead, 0, EPOLL_CTL_DEL);
 		_webServ->removeFd(_fdRead);
         close(_fdRead);
         _fdRead = -1;
 
-        _clientInfo->readyToRespond();
+        try {
+	        unsigned char src[] = {'\r', '\n', '\r', '\n'};
+	        std::vector<unsigned char>::iterator ite;
+
+	        ite = std::search(_rawData.begin(), _rawData.end(), src, src + 4);
+	        if (_rawData.empty() || ite == _rawData.end())
+		        throw RequestError(INTERNAL_SERVER_ERROR, "Failed to read data from cgi");
+
+            std::string headers(_rawData.begin(), ite);
+            std::vector<unsigned char> body(ite + 4, _rawData.end());
+
+            Response::cgiResponse(*_clientInfo, headers, body);
+        } catch (const std::exception &e) {
+           _clientInfo->handleException(e); 
+        }
     }
 }
 
@@ -210,7 +215,7 @@ void Cgi::doOnWrite()
  */
 void Cgi::doOnError(uint32_t event)
 {
-    std::cout << "Client on error, event = " << event << std::endl;
+    std::cout << "Cgi on error, event = " << event << std::endl;
     _pidChild = -1;
     this->doOnRead();
 }
@@ -250,15 +255,12 @@ int Cgi::initChildProcess(int toCgi[2], int fromCgi[2])
 
 void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
 {
-    char *cgiPathCopy = NULL;
-    char *scriptCopy = NULL;
-
     std::string cgiPath = _clientInfo->getServerConf()->getCgi().find("php")->second;
-    cgiPathCopy = new char[cgiPath.size() + 1];
+    char *cgiPathCopy = new char[cgiPath.size() + 1];
     strcpy(cgiPathCopy, cgiPath.c_str());
 
     std::string script = _fullPath.substr(_fullPath.rfind("/") + 1);
-    scriptCopy = new char[script.size() + 1];
+    char *scriptCopy = new char[script.size() + 1];
     strcpy(scriptCopy, script.c_str());
 
     char **argv = new char *[3];
@@ -266,7 +268,7 @@ void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     argv[1] = scriptCopy;
     argv[2] = NULL;
 
-    char **envCgi = mapCgiParams();
+    char **envCgi = mapCgiParams(script);
 
     close(pipeToCgi[1]);
     close(pipeFromCgi[0]);
@@ -288,7 +290,7 @@ void Cgi::runChildProcess(int pipeToCgi[2], int pipeFromCgi[2])
     exit(EXIT_FAILURE);
 }
 
-char **Cgi::mapCgiParams()
+char **Cgi::mapCgiParams(std::string const & script)
 {
     ServerConf const * serverInfo = _clientInfo->getServerConf();
     Request const &request = _clientInfo->getRequest();
@@ -306,8 +308,8 @@ char **Cgi::mapCgiParams()
         std::string("REMOTE_HOST="),
         std::string("REMOTE_IDENT="),
         std::string("REQUEST_METHOD=") + request.getHttpMethod(),
-        std::string("SCRIPT_NAME=") + "index.php",
-        std::string("PHP_SELF=") + "index.php",
+        std::string("SCRIPT_NAME=") + script,
+        std::string("PHP_SELF=") + script,
         std::string("SCRIPT_FILENAME=") + _fullPath,
         std::string("SERVER_NAME=") + serverInfo->getName()[0],
         std::string("SERVER_PORT=") + StringUtils::intToString(serverInfo->getPort()),
@@ -355,7 +357,5 @@ void    Cgi::processCgiResponse()
     std::string headers(_rawData.begin(), ite);
     std::vector<unsigned char> body(ite + 4, _rawData.end());
 
-    Response::cgiResponse(_rawData, headers, body);
-
-    _clientInfo->responseCgi(_rawData);
+    Response::cgiResponse(*_clientInfo, headers, body);
 }

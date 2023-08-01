@@ -26,9 +26,8 @@ class Response
 
     public:
   
-        static std::string cgiSimpleResponse(std::string & body);
-   		static void cgiResponse(std::vector<unsigned char> & clientRawData,
-                                std::string headers, std::vector<unsigned char> & body);
+        static void cgiResponse(Client & client, std::string headers,
+                                            std::vector<unsigned char> & body);
         static void errorResponse(status_code_t code, Client & client);
 		static status_code_t deleteResponse(const std::string &path);
 		static void dealDelete(const std::string &path, Client & client);
