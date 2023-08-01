@@ -19,29 +19,39 @@
 #include "Server.hpp"
 #include "Cgi.hpp"
 
-#define BUFFER_SIZE		1024
-#define	TIMEOUT			5000LL
+#define BUFFER_SIZE		128
+#define	TIMEOUT			500000LL
 
 class Client : public AFileDescriptor
 {
 	private:
 		long long						_startTime;
-		std::vector<unsigned char>		_rawData;
+
+		std::vector<unsigned char>		_inputData;
+		std::vector<unsigned char>		_outputData;
+
 		Server const * const			_server;
 		ServerConf const * 				_serverConf; 
 		Location const *				_location;
-		Request							_request;
 		std::string						_correctPathRequest;
-		bool							_responseReady;
+
+		Request							_request;
 		Cgi 							_cgi;
+
+		bool							_responseReady;
+		bool							_callCgi;
+		bool							_close;
 
 		Client(void);
 
-		ServerConf const *	getCorrectServerConf();
-		void				handleScript(std::string const & fullPath);
+		void				handleRequest();
+
+		void				getCorrectServerConf();
 		void				getCorrectLocationBlock();
 		void				getCorrectPathRequest();
 		std::string 		searchIndexFile(std::string path, std::vector<std::string> const &indexs, bool autoindex);
+
+		void				handleScript(std::string const & fullPath);
 
 	public:
 		
@@ -61,11 +71,12 @@ class Client : public AFileDescriptor
 		virtual void doOnWrite();
 		virtual void doOnError(uint32_t event);
 
-		void	responseCgi(std::vector<unsigned char> const & cgiRawData);
 		bool	timeoutReached();
 		void	fillRawData(std::vector<unsigned char> const & data);
 		void	readyToRespond();
 		void	handleException(std::exception const & exception);
+		void	closeClient();
+		void	prepareToNextRequest();
 };
 
 #endif
