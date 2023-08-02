@@ -6,7 +6,7 @@
 /*   By: eantoine <eantoine@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/03 19:19:11 by lfrederi          #+#    #+#             */
-/*   Updated: 2023/08/01 15:20:13 by eantoine         ###   ########.fr       */
+/*   Updated: 2023/08/01 18:06:01 by eantoine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,7 +171,8 @@ void Response::deleteResponse(const std::string &path, Client & client)
         throw RequestError(CONFLICT, "Conflict deleting path");
 		
     if (S_ISREG(stat.st_mode) || S_ISLNK(stat.st_mode))
-        unlink(path.c_str());//TODO eric si pas les droits
+        if(unlink(path.c_str()) == -1)
+			throw RequestError(FORBIDDEN, "No access authorisation to path");//TODO eric si pas les droits
     else if (S_ISDIR(stat.st_mode)){
         if (FileUtils::_removeDir(path.c_str()) == -1)
 			throw RequestError(FORBIDDEN, "No access authorisation to path");
